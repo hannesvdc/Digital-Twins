@@ -1,5 +1,5 @@
 import numpy as np
-import numpy.linalg as lg
+import scipy.linalg as lg
 
 
 def counter_to_index(counter):
@@ -76,18 +76,8 @@ def computeSystemMatrix(mu, N=100):
 
     return A
 
-def solveElasticPDE(E, mu, f, N): # f has shape (N+1, 2)
-    directory = '/Users/hannesvdc/Research_Data/Digital Twins/Elastodynamics/'
-    filename = 'FD_Matrix_mu=' + str(mu) + '.npy'
-    try:
-        print('Attempting Loading System Matrix into Memory...')
-        A = np.load(directory + filename)
-        print('Loading Succesful!')
-    except:
-        print('Computing and Storing the Finite Differences System Matrix.')
-        A = computeSystemMatrix(mu, N=N)
-        np.save(directory + filename, A)
-
+def solveElasticPDE(lu, pivot, E, mu, f, N): # f has shape (N+1, 2)
+    
     # Put the source term f into the right structure
     dx = 1.0 / N
     b = np.zeros(2*N*(N+1))
@@ -96,7 +86,7 @@ def solveElasticPDE(E, mu, f, N): # f has shape (N+1, 2)
     
     # Solve the linear system with A
     print('\nSolving Linear System...')
-    q = lg.solve(A, b)
+    q = lg.lu_solve((lu, pivot), b)
     print('Done!')
 
     # Put q into two (N+1) x (N+1) matrices representing the grid of u and v

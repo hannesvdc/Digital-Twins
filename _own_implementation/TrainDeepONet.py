@@ -20,9 +20,9 @@ G = np.load(directory + g_filename)
 print('Maximal G', np.max(G), 0.01**2 * (1-0.3**2) / (410 * 10**3))
 
 # Setup the DeepONet
-p = 25
-branch_layers = [202, p, p]
-trunk_layers = [2, p, p]
+p = 100
+branch_layers = [202, p, p, p]
+trunk_layers = [2, p, p, p]
 deeponet = DeepONet(branch_layers=branch_layers, trunk_layers=trunk_layers, activation=sigmoid)
 print('Number of weights:', deeponet.n_weights)
 
@@ -36,16 +36,18 @@ d_loss_fn = jit(grad(loss_fn))
 rng = rd.RandomState()
 weights = rng.normal(0.0, 1.0, size=deeponet.n_weights)
 loss = loss_fn(weights)
-while loss > 1.e3:
+print(loss)
+while loss > 5.e4: # 1.e3 when p=25
     weights = rng.normal(0.0, 1.0, size=deeponet.n_weights)
     loss = loss_fn(weights)
+    print(loss)
 print('Initial Weights', weights)
 print('Initial Loss', loss)
 print('Initial Loss Gradient', lg.norm(d_loss_fn(weights)))
 
 # Setup the Optimizer and Learn Optimal Weights
-epochs = 50000
-scheduler = PiecewiseConstantScheduler({0: 1.e-2, 45000: 1.e-3})
+epochs = 25000
+scheduler = PiecewiseConstantScheduler({0: 1.e-1, 50: 1.e-2, 5000: 1.e-3, 20000: 1.e-4})
 optimizer = AdamOptimizer(loss_fn, d_loss_fn, scheduler=scheduler)
 try:
     weights = optimizer.optimize(weights, n_epochs=epochs, tolerance=0.0)

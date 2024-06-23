@@ -38,9 +38,9 @@ class DeepONetDataset(Dataset):
             self.input_data[n,:] = pt.cat((branch_data[i,:], trunk_data[j,:]))
             self.output_data[n] = scale * loaded_output_data[i,j]
 
-        # Downsampling
+        # Downsampling. Check ratio # datapoints / # parameters!
         print('Downsampling...')
-        n_samples = 200 * 256
+        n_samples = self.input_data.shape[0] # 200 * 256 when p = 25
         indices = np.random.randint(low=0, high=loaded_output_size, size=n_samples)
         self.input_data = self.input_data[indices,:]
         self.output_data = self.output_data[indices]
@@ -62,9 +62,9 @@ train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Network and the Optimizer (Adam)
 print('\nSetting Up DeepONet Neural Net...')
-p = 25
-branch_layers = [202, p, p]
-trunk_layers = [2, p, p]
+p = 200
+branch_layers = [202, 512, 512, p]
+trunk_layers = [2, 128, 128, p]
 network = DeepONet(branch_layers=branch_layers, trunk_layers=trunk_layers)
 network.forward(dataset.input_data)
 optimizer = optim.Adam(network.parameters())
@@ -96,8 +96,8 @@ def train(epoch):
             train_losses.append(loss.item())
             train_counter.append((batch_idx*64) + ((epoch-1)*len(train_loader.dataset)))
 
-            pt.save(network.state_dict(), store_directory + 'model.pth')
-            pt.save(optimizer.state_dict(), store_directory + 'optimizer.pth')
+            pt.save(network.state_dict(), store_directory + 'model_githubreproduction.pth')
+            pt.save(optimizer.state_dict(), store_directory + 'optimizer_githubrepoduction.pth')
 
 # Do the actual training
 print('\nStarting Training Procedure...')

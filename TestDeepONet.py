@@ -15,42 +15,33 @@ class DeepONetDataset(Dataset):
     def __init__(self):
         super().__init__()
         print('Loading Data...')
+        self.N = 100
         
         directory = '/Users/hannesvdc/Research_Data/Digital Twins/DeepONet/'
         branch_filename = 'branch_data.npy'
         trunk_filename  = 'trunk_data.npy'
-        G_filename      = 'output_data.npy'
 
         branch_data = pt.from_numpy(np.load(directory + branch_filename).transpose()) # Transpose to make data row-major
         branch__el_size = branch_data.shape[1]
         trunk_data = pt.from_numpy(np.load(directory + trunk_filename).transpose())
         n_trunk_points = trunk_data.shape[0]
         trunk_el_size = trunk_data.shape[1]
-        loaded_output_data = pt.from_numpy(np.load(directory + G_filename))
-        loaded_output_size = np.prod(loaded_output_data.shape)
 
         print('Structuring Data...')
         self.scale = 1.e9
         self.input_data = pt.zeros((n_trunk_points, branch__el_size + trunk_el_size))
-        self.output_data = pt.zeros(loaded_output_size)
         for n in range(self.input_data.shape[0]):
             self.input_data[n,:] = pt.cat((branch_data[0,:], trunk_data[n,:]))
-            self.output_data[n] = self.scale * loaded_output_data[0,n]
-        print(self.input_data.shape)
 
     def __len__(self):
         return self.input_data.shape[0]
 	
     def __getitem__(self, idx):
-        return self.input_data[idx,:], self.output_data[idx]
+        return self.input_data[idx,:]
     
 # No need for gradients in test script
 pt.set_grad_enabled(False)
 pt.set_default_dtype(pt.float64)
-
-# Load the data in memory
-dataset = DeepONetDataset()
-print('dataset', dataset.input_data)
 
 # Initialize the Network and the Optimizer (Adam)
 print('\nSetting Up DeepONet Neural Net...')
@@ -61,13 +52,18 @@ network = DeepONet(branch_layers=branch_layers, trunk_layers=trunk_layers)
 
 # Load the network form data
 store_directory = '/Users/hannesvdc/Research_Data/Digital Twins/DeepONet/results/'
-filename = 'model.pth'
+filename = 'model_p=25.pth'
 network.load_state_dict(pt.load(store_directory + filename))
 network.eval()
 
+# Evaluate network
+dataset = DeepONetDataset()
+N = dataset.N
+G_NN = network.forward(dataset.input_data)
+G_NN = pt.reshape(G_NN, (N+1, N+1)).T / dataset.scale
+
 # Solve the Elastostatic PDE with given forcing
 print('\nComputing Solution to Elastostatic PDE.')
-N = 100
 E = 410.0 * 1.e3
 mu = 0.3
 forcing = np.zeros((N+1, 2))
@@ -75,13 +71,7 @@ forcing[:,0] = dataset.input_data[0,0:(N+1)]
 forcing[:,1] = dataset.input_data[0, (N+1) : 2*(N+1)]
 A = pde.computeSystemMatrix(mu, N)
 lu, pivot = sc.linalg.lu_factor(A)
-(u, v) = pde.solveElasticPDE(lu, pivot, E, mu, forcing, N)
-print('G', u.shape, u)
-
-# Evaluate network
-G_NN = network.forward(dataset.input_data)
-G_NN = pt.reshape(G_NN, (N+1,N+1)).T / dataset.scale
-print('G_NN', G_NN.shape, G_NN)
+(u, v) = pde.solveElasticPDE(lu, pivot, E, mu, forcing, dataset.N)
 
 # Plot result
 x = np.linspace(0.0, 1.0, N+1)

@@ -6,11 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 
-from collections import OrderedDict
-
-# Just some sanity pytorch settings
-pt.set_grad_enabled(True)
-pt.set_default_dtype(pt.float64)
+from DeepONet import DeepONet
 
 # The data impleementation and loader class
 class DeepONetDataset(Dataset):
@@ -55,53 +51,9 @@ class DeepONetDataset(Dataset):
     def __getitem__(self, idx):
         return self.input_data[idx,:], self.output_data[idx]
     
-# Class for Dense Neural Networks used for branch and trunk networks.
-class DenseNN(nn.Module):
-    def __init__(self, layers=[]):
-        super(DenseNN, self).__init__()
-        
-        # Create all feed-forward layers
-        self.depth = len(layers) - 1
-        self.activation = nn.Tanh
-
-        layer_list = list()
-        for i in range(self.depth - 1):
-            layer_list.append(('layer_%d' % i, pt.nn.Linear(layers[i], layers[i+1])))
-            layer_list.append(('activation_%d' % i, self.activation()))
-        layer_list.append(('layer_%d' % (self.depth-1), pt.nn.Linear(layers[-2], layers[-1])))
-        layerDict = OrderedDict(layer_list)
-
-        # Combine all layers in a single Sequential object to keep track of parameter count
-        self.layers = pt.nn.Sequential(layerDict)
-
-
-    def forward(self, x):
-        out = self.layers(x)
-        return out
-    
-# Class for general DeepONets
-class DeepONet(nn.Module):
-    def __init__(self, branch_layers, trunk_layers):
-        super(DeepONet, self).__init__()
-
-        self.branch_net = DenseNN(branch_layers)
-        self.trunk_net = DenseNN(trunk_layers)
-        
-        self.params = []
-        self.params.extend(self.branch_net.parameters())
-        self.params.extend(self.trunk_net.parameters())
-        print('Number of DeepONet Parameters:', sum(p.numel() for p in self.parameters()))
-
-    # The input data x = array([branch_x, trunk_x]) with shape (N_data, branch_size + trunk_size)
-    def forward(self, x):
-        branch_x = x[:, 0:(x.shape[1]-2)]
-        trunk_x = x[:, (x.shape[1]-2):]
-        branch_output = self.branch_net.forward(branch_x)
-        trunk_output = self.trunk_net.forward(trunk_x)
-
-        # Multiply element-wise and sum over axis=1 (p axis)
-        assert branch_output.shape == trunk_output.shape
-        return pt.sum(branch_output * trunk_output, dim=1)
+# Just some sanity pytorch settings
+pt.set_grad_enabled(True)
+pt.set_default_dtype(pt.float64)
 
 # Load the data in memory
 batch_size = 256
@@ -109,7 +61,7 @@ dataset = DeepONetDataset()
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Network and the Optimizer (Adam)
-print('\nStart Training')
+print('\nSetting Up DeepONet Neural Net...')
 p = 25
 branch_layers = [202, p, p]
 trunk_layers = [2, p, p]
@@ -148,6 +100,7 @@ def train(epoch):
             pt.save(optimizer.state_dict(), store_directory + 'optimizer.pth')
 
 # Do the actual training
+print('\nStarting Training Procedure...')
 n_epochs = 50000
 try:
     for epoch in range(1, n_epochs + 1):

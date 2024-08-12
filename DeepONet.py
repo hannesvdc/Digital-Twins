@@ -22,10 +22,8 @@ class DenseNN(nn.Module):
         # Combine all layers in a single Sequential object to keep track of parameter count
         self.layers = pt.nn.Sequential(layerDict)
 
-
     def forward(self, x):
-        out = self.layers(x)
-        return out
+        return self.layers(x)
     
 # Class for general DeepONets
 class DeepONet(nn.Module):

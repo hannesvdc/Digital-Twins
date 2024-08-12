@@ -21,7 +21,7 @@ class NSDataSet(Dataset):
         # Compute the spatial Derivatives
         self.L = 95.0
         self.M = self.y_data.shape[1] # 1001
-        self.k = np.concatenate((np.arange(self.M // 2 + 1), np.arange(-self.M // 2 + 1, 0))) * 2.0 * np.pi / self.L # Should be L?
+        self.k = np.concatenate((np.arange(self.M // 2 + 1), np.arange(-self.M // 2 + 1, 0))) * 2.0 * np.pi / self.L
         self.dydx_data = np.zeros_like(self.y_data)
         self.dydxx_data = np.zeros_like(self.y_data)
         self.dydxxx_data = np.zeros_like(self.y_data)
@@ -36,18 +36,23 @@ class NSDataSet(Dataset):
             self.dydxx_data[index, :] = np.real(fft.ifft(f_eta_xx))
             self.dydxxx_data[index, :] = np.real(fft.ifft(f_eta_xxx))
             self.dydxxxx_data[index, :] = np.real(fft.ifft(f_eta_xxxx))
-        self.dydt_data = pt.from_numpy(self.dydt_data).requires_grad_(False)
-        self.y_data = pt.from_numpy(self.y_data).requires_grad_(False)
-        self.dydx_data = pt.from_numpy(self.dydx_data).requires_grad_(False)
-        self.dydxx_data = pt.from_numpy(self.dydxx_data).requires_grad_(False)
-        self.dydxxx_data = pt.from_numpy(self.dydxxx_data).requires_grad_(False)
-        self.dydxxxx_data = pt.from_numpy(self.dydxxxx_data).requires_grad_(False)
+
+        # Convert spatial derivatives to pytorch without gradients
+        has_grad = pt.is_grad_enabled()
+        pt.set_grad_enabled(False)
+        self.dydt_data = pt.from_numpy(self.dydt_data)
+        self.y_data = pt.from_numpy(self.y_data)
+        self.dydx_data = pt.from_numpy(self.dydx_data)
+        self.dydxx_data = pt.from_numpy(self.dydxx_data)
+        self.dydxxx_data = pt.from_numpy(self.dydxxx_data)
+        self.dydxxxx_data = pt.from_numpy(self.dydxxxx_data)
+        pt.set_grad_enabled(has_grad)
 
     def __len__(self):
         return self.N_data
     
     def __getitem__(self, idx):
-        return (self.y_data[idx,:], self.dydx_data[idx,:], self.dydxx_data[idx,:], self.dydxxx_data[idx,:], self.dydxxxx_data[idx,:], self.R), self.dydt_data[idx,:]
+        return (self.y_data[idx,:], self.dydx_data[idx,:], self.dydxx_data[idx,:], self.dydxxx_data[idx,:], self.dydxxxx_data[idx,:]), self.dydt_data[idx,:]
 
 if __name__ == '__main__':
     dataset = NSDataSet()

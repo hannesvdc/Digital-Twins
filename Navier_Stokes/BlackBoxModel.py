@@ -8,7 +8,7 @@ class FeedforwardNetwork(nn.Module):
         super(FeedforwardNetwork, self).__init__()
         
         # Create all feed-forward layers
-        layers = [100, 100, 100, 100, 1]
+        layers = [5, 100, 100, 100, 100, 1]
         self.depth = len(layers) - 1
         self.activation = nn.Tanh
 
@@ -23,7 +23,7 @@ class FeedforwardNetwork(nn.Module):
         self.layers = pt.nn.Sequential(layerDict)
 
         # Bookkeeping
-        print('Number of Krylov Parameters:', sum(p.numel() for p in self.parameters()))
+        print('Number of Trainable Parameters:', sum(p.numel() for p in self.parameters()))
 
     def forward(self, x):
         return self.layers(x)

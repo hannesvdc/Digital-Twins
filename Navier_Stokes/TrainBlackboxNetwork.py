@@ -16,6 +16,7 @@ pt.set_default_dtype(pt.float64)
 print('Generating Training Data.')
 batch_size = 64
 dataset = NSDataSet()
+print(len(dataset))
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Neural Network and the Optimizer (Adam)
@@ -30,7 +31,7 @@ train_counter = []
 store_directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/WaveData/'
 def train(epoch):
     network.train()
-    for _, (input_data, output_data) in enumerate(train_loader):
+    for batch_id, (input_data, output_data) in enumerate(train_loader):
         optimizer.zero_grad()
 
         # Foward-propagate the input data
@@ -46,7 +47,7 @@ def train(epoch):
         optimizer.step()
 
     # Some housekeeping
-    print('Train Epoch: {} \tLoss: {:.6f}'.format(epoch, loss.item()))
+    print('Train Epoch: {} \tLoss: {:.16f}'.format(epoch, loss.item()))
     train_losses.append(loss.item())
     train_counter.append(epoch)
     pt.save(network.state_dict(), store_directory + 'model_black_box.pth')

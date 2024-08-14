@@ -26,7 +26,6 @@ optimizer = optim.Adam(network.parameters(), lr=0.001)
 
 # Training Routine
 train_losses = []
-train_grads = []
 train_counter = []
 store_directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/WaveData/'
 def train(epoch):
@@ -47,9 +46,8 @@ def train(epoch):
         optimizer.step()
 
     # Some housekeeping
-    print('Train Epoch: {} \tLoss: {:.6f} \tLoss Gradient: {:.6f}'.format(epoch, loss.item(), pt.norm(network.parameters().grad)))
+    print('Train Epoch: {} \tLoss: {:.6f}'.format(epoch, loss.item()))
     train_losses.append(loss.item())
-    train_grads.append(pt.norm(network.parameters().grad))
     train_counter.append(epoch)
     pt.save(network.state_dict(), store_directory + 'model_black_box.pth')
     pt.save(optimizer.state_dict(), store_directory + 'optimizer_black_box.pth')
@@ -64,7 +62,6 @@ except KeyboardInterrupt:
     print('Terminating Training. Plotting Training Error Convergence.')
 
 # Show the training results
-fig = plt.figure()
 plt.semilogy(train_counter, train_losses, color='blue', label='Training Loss')
 plt.legend()
 plt.xlabel('Epochs')

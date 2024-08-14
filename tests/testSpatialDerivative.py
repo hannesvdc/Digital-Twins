@@ -4,7 +4,7 @@ sys.path.append('../')
 import torch as pt
 import numpy.linalg as lg
 
-from Navier_Stokes.BlackBoxModel import NSDataSet
+from Navier_Stokes.BlackBoxDataset import NSDataSet
 
 L = 95.0
 M = 1000

@@ -55,7 +55,7 @@ def train(epoch):
 
 # Do the actual training
 print('\nStarting Adam Training Procedure...')
-n_epochs = 10000
+n_epochs = 1
 try:
     for epoch in range(1, n_epochs+1):
         train(epoch)

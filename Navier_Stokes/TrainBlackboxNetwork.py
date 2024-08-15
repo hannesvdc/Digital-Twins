@@ -1,6 +1,7 @@
 import torch as pt
 import torch.nn as nn
 import torch.optim as optim
+import torch.optim.lr_scheduler as sch
 
 import matplotlib.pyplot as plt
 
@@ -24,6 +25,7 @@ print('\nSetting Up the Feed-Forward Neural Network.')
 network = FeedforwardNetwork()
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)
+scheduler = sch.StepLR(optimizer, step_size=1000, gamma=0.1)
 
 # Training Routine
 train_losses = []
@@ -68,6 +70,7 @@ n_epochs = 10000
 try:
     for epoch in range(1, n_epochs+1):
         train(epoch)
+        scheduler.step()
 except KeyboardInterrupt:
     print('Terminating Training. Plotting Training Error Convergence.')
 

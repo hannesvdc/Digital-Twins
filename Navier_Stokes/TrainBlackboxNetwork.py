@@ -25,7 +25,7 @@ print('\nSetting Up the Feed-Forward Neural Network.')
 network = FeedforwardNetwork()
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)
-scheduler = sch.StepLR(optimizer, step_size=1000, gamma=0.1)
+scheduler = sch.StepLR(optimizer, step_size=5000, gamma=0.1)
 
 # Training Routine
 train_losses = []

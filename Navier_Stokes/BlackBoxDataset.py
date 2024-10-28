@@ -16,6 +16,7 @@ class NSDataSet(Dataset):
         self.y_filename = 'newRe' + self.R_string + '_y.dat'
         self.dydt_filename = 'newRe' + self.R_string + '_dydt.dat'
         y_data = np.loadtxt(self.storage_directory + self.y_filename)
+        print('y_data shape', y_data.shape)
         dydt_data = np.loadtxt(self.storage_directory + self.dydt_filename)
 
         # Compute the spatial Derivatives
@@ -51,6 +52,7 @@ class NSDataSet(Dataset):
         self.input_data[:,2] = self.scale * pt.from_numpy(dydxx_data)
         self.input_data[:,3] = self.scale * pt.from_numpy(dydxxx_data)
         self.input_data[:,4] = self.scale * pt.from_numpy(dydxxxx_data)
+        print(self.input_data.shape)
         self.output_data = self.scale * pt.unsqueeze(pt.from_numpy(dydt_data), dim=1).requires_grad_(False)
 
     def __len__(self):

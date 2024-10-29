@@ -21,7 +21,7 @@ train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Neural Network and the Optimizer (Adam)
 print('\nSetting Up the Feed-Forward Neural Network.')
-lr_step = 7500
+lr_step = 1000
 network = FeedforwardNetwork()
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)

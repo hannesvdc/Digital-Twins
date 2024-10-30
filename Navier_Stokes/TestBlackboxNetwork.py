@@ -7,6 +7,7 @@ import cv2
 import os
 
 from BlackBoxModel import FeedforwardNetwork
+from BlackBoxDataset import NSDataSet
 
 # Just some sanity pytorch settings
 pt.set_grad_enabled(False)
@@ -21,29 +22,29 @@ def calcSpatialDerivatives(y, k):
     
     return y_x, y_xx, y_xxx, y_xxxx
 
-def normalize(network, y, y_x, y_xx, y_xxx, y_xxxx):
-    return (y - network.y_mean) / network.y_std, \
-           (y_x - network.y_x_mean) / network.y_x_std, \
-           (y_xx - network.y_xx_mean) / network.y_xx_std, \
-           (y_xxx - network.y_xxx_mean) / network.y_xxx_std, \
-           (y_xxxx - network.y_xxxx_mean) / network.y_xxxx_std
+def normalize(dataset, y, y_x, y_xx, y_xxx, y_xxxx):
+    return (y - dataset.y_mean) / dataset.y_std, \
+           (y_x - dataset.y_x_mean) / dataset.y_x_std, \
+           (y_xx - dataset.y_xx_mean) / dataset.y_xx_std, \
+           (y_xxx - dataset.y_xxx_mean) / dataset.y_xxx_std, \
+           (y_xxxx - dataset.y_xxxx_mean) / dataset.y_xxxx_std
 
-def unnormalize(network, yt):
-    return network.y_t_mean + yt * network.y_t_std
+def unnormalize(dataset, yt):
+    return dataset.y_t_mean + yt * dataset.y_t_std
 
-def rhs(network, y, k):
+def rhs(network, dataset, y, k):
     y_x, y_xx, y_xxx, y_xxxx = calcSpatialDerivatives(y, k)
-    y_x, y_xx, y_xxx, y_xxxx = normalize(network, y, y_x, y_xx, y_xxx, y_xxxx)
+    y, y_x, y_xx, y_xxx, y_xxxx = normalize(dataset, y, y_x, y_xx, y_xxx, y_xxxx)
     input_data = pt.vstack((y, y_x, y_xx, y_xxx, y_xxxx)).transpose(0, 1)
 
     output_data = network.forward(input_data)[:,0]
-    return unnormalize(network, output_data)
+    return unnormalize(dataset, output_data)
 
-def RK4(network, y, k, dt):
-    k1 = rhs(network, y, k)
-    k2 = rhs(network, y + 0.5*dt*k1, k)
-    k3 = rhs(network, y + 0.5*dt*k2, k)
-    k4 = rhs(network, y + 1.0*dt*k3, k)
+def RK4(network, dataset, y, k, dt):
+    k1 = rhs(network, dataset, y, k)
+    k2 = rhs(network, dataset, y + 0.5*dt*k1, k)
+    k3 = rhs(network, dataset, y + 0.5*dt*k2, k)
+    k4 = rhs(network, dataset, y + 1.0*dt*k3, k)
 
     return y + dt * (k1 + 2.0*k2 + 2.0*k3 + k4) / 6.0
 
@@ -59,6 +60,7 @@ k = pt.from_numpy(np.concatenate((np.arange(M // 2 + 1), np.arange(-M // 2 + 1, 
 # Load the optimized network state
 network = FeedforwardNetwork()
 network.load_state_dict(pt.load(storage_directory + 'model_black_box.pth'))
+dataset = NSDataSet()
 
 # Simulate the KS equations and store the intermediate solutions
 time_simulation = [initial_data]
@@ -68,7 +70,7 @@ T = 100.0
 N = int(T / dt)
 store_n = 1000
 for n in range(N):
-    y = RK4(network, y, k, dt)
+    y = RK4(network, dataset, y, k, dt)
 
     if n % store_n == 0: # Store every 0.01 seconds
         print('t =', (n+1)*dt)

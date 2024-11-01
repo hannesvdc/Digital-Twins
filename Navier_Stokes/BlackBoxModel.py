@@ -23,7 +23,8 @@ class FeedforwardNetwork(nn.Module):
         self.layers = pt.nn.Sequential(layerDict)
 
         # Bookkeeping
-        print('Number of Trainable Parameters:', sum(p.numel() for p in self.parameters()))
+        self.n_trainable_parameters = sum(p.numel() for p in self.parameters())
+        print('Number of Trainable Parameters:', self.n_trainable_parameters)
 
     def forward(self, x):
         return self.layers(x)

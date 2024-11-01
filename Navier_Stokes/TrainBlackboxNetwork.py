@@ -21,11 +21,12 @@ train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Neural Network and the Optimizer (Adam)
 print('\nSetting Up the Feed-Forward Neural Network.')
-lr_step = 1000
+lr_step = 2500
 network = FeedforwardNetwork()
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 scheduler = sch.StepLR(optimizer, step_size=lr_step, gamma=0.1)
+print('Number of Data Points per Trainable Parameter:', len(dataset) / network.n_trainable_parameters)
 
 # Training Routine
 train_losses = []
@@ -66,7 +67,7 @@ def train(epoch):
 
 # Do the actual training
 print('\nStarting Adam Training Procedure...')
-n_epochs = 10 * lr_step
+n_epochs = 4 * lr_step
 try:
     for epoch in range(1, n_epochs+1):
         train(epoch)

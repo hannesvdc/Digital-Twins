@@ -31,6 +31,18 @@ def fhn_euler(u, v, delta, a0, a1, eps, dx, dt):
 
     return u_new, v_new
 
+def fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T):
+    for n in range(int(T / dt)):
+        u, v = fhn_euler(u, v, delta, a0, a1, eps, dx, dt)
+    return u, v
+
+def psi(x, T, delta, a0, a1, eps, dx, dt):
+    N = x.size // 2
+    u, v = x[0:N], x[N:]
+
+    u_new, v_new = fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T)
+    return np.concatenate((u - u_new, v - v_new)) / T
+
 def plotFitzHughNagumoSolution():
     # Model parameters
     L = 20.0

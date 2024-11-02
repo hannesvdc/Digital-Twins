@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as lg
 import matplotlib.pyplot as plt
 
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
@@ -42,6 +43,14 @@ def psi(x, T, delta, a0, a1, eps, dx, dt):
 
     u_new, v_new = fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T)
     return np.concatenate((u - u_new, v - v_new)) / T
+
+def d_psi(x, v, T, delta, a0, a1, eps, dx, dt):
+    eps_fd = 1.e-8
+    norm_v = lg.norm(v)
+
+    p1 = psi(x + eps_fd * v / norm_v, T, delta, a0, a1, eps, dx, dt)
+    p2 = psi(x, T, delta, a0, a1, eps, dx, dt)
+    return norm_v * (p1 - p2) / eps_fd
 
 def plotFitzHughNagumoSolution():
     # Model parameters

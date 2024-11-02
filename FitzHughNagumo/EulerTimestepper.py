@@ -34,7 +34,8 @@ def fhn_euler(u, v, dx, dt, params):
     return u_new, v_new
 
 def fhn_euler_timestepper(u, v, dx, dt, T, params):
-    for _ in range(int(T / dt)):
+    N_steps = int(T / dt)
+    for _ in range(N_steps):
         u, v = fhn_euler(u, v, dx, dt, params)
     return u, v
 
@@ -93,7 +94,6 @@ def plotFitzHughNagumoSolution():
     u_min = np.min(u_solution)
     v_max = np.max(v_solution)
     v_min = np.min(v_solution)
-    print(u_max, u_min, v_max, v_min)
     print('psi', lg.norm(psi(np.concatenate((u,v)), 0.1, dx, dt, params)))
     plt.figure()
     plt.pcolor(X, Y, u_solution, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
@@ -130,7 +130,7 @@ def findSteadyState():
     tolerance = 1.e-14
     try:
         cb = lambda x, f: print(lg.norm(f))
-        x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, callback=cb, f_tol=tolerance)
+        x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, callback=cb, f_tol=tolerance, method='gmres')
     except opt.NoConvergence as err:
         str_err = str(err)[1:len(str_err)-1]
         x_ss = np.fromstring(str_err, dtype=float, sep=' ')

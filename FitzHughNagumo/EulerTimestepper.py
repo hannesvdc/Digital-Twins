@@ -120,16 +120,13 @@ def findSteadyState():
     eps = 0.1 # eps = 0.01 is unstable (oscillatory) beyond the Hopf bifurcation. Doing stable for now.
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
-    def cb(x, f): 
-        print(lg.norm(f))
-
     F = lambda x: psi(x, T, dx, dt, params)
     x_array = np.linspace(0.0, L, N)
     u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
     x0 = np.concatenate((u0, v0))
     try:
-        x_ss = opt.newton_krylov(F, x0, callback=cb, rdiff=1.e-8, verbose=True, f_tol=1.e-6)
+        x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, verbose=True, f_tol=1.e-6)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]

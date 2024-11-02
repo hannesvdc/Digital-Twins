@@ -20,16 +20,18 @@ def G(x, eps):
 def dGdx_v(x, v, eps):
     rdiff = 1.e-8
     norm_v = lg.norm(v)
-    return (G(x + rdiff * v / norm_v, eps) - G(x, eps)) / rdiff
+    return (G(x + rdiff * v, eps) - G(x, eps)) / rdiff
 
 def dGdeps(x, eps):
     rdiff = 1.e-8
     return (G(x, eps + rdiff) - G(x, eps)) / rdiff
 
 def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
-    DG = lambda v: np.hstack((Gx_v(v[0:M]), G_eps * v[M]))
+    DG = lambda v: Gx_v(v[0:M]) + G_eps * v[M]
     g_tangent = lambda v: np.append(DG(v), np.dot(v, v) - 1.0)
-    tangent = opt.newton_krylov(g_tangent, prev_tangent, f_tol=tolerance)
+
+    cb = lambda a, b: print(lg.norm(b))
+    tangent = opt.newton_krylov(F=g_tangent, xin=prev_tangent, f_tol=tolerance, callback=cb)
 	
     return tangent
 
@@ -40,7 +42,7 @@ def numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance):
     x_path = [np.mean(x[0:N])]
     eps_path = [eps]
 
-    print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(0, np.mean(x[0:N]), eps)
+    print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
     print(print_str)
 
 	# Choose intial tangent (guess). No idea why yet, but we need to

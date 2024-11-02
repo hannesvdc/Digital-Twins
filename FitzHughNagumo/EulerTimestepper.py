@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.linalg as lg
+import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
@@ -44,14 +45,6 @@ def psi(x, T, delta, a0, a1, eps, dx, dt):
     u_new, v_new = fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T)
     return np.concatenate((u - u_new, v - v_new)) / T
 
-def d_psi(x, v, T, delta, a0, a1, eps, dx, dt):
-    eps_fd = 1.e-8
-    norm_v = lg.norm(v)
-
-    p1 = psi(x + eps_fd * v / norm_v, T, delta, a0, a1, eps, dx, dt)
-    p2 = psi(x, T, delta, a0, a1, eps, dx, dt)
-    return norm_v * (p1 - p2) / eps_fd
-
 def plotFitzHughNagumoSolution():
     # Model parameters
     L = 20.0
@@ -60,7 +53,7 @@ def plotFitzHughNagumoSolution():
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
-    eps = 0.01
+    eps = 0.1 # 0.01 originally for the spatio-temporal oscillations
 
     # Initial condition
     x_array = np.linspace(0.0, L, N)
@@ -100,6 +93,7 @@ def plotFitzHughNagumoSolution():
     v_max = np.max(v_solution)
     v_min = np.min(v_solution)
     print(u_max, u_min, v_max, v_min)
+    print('psi', lg.norm(psi(np.concatenate((u,v)), 0.1, delta, a0, a1, eps, dx, dt)))
     plt.figure()
     plt.pcolor(X, Y, u_solution, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
     plt.xlabel(r'$x$')
@@ -112,5 +106,43 @@ def plotFitzHughNagumoSolution():
     plt.title(r'$v(x, t)$')
     plt.show()
 
+def findSteadyState():
+    # Model parameters
+    L = 20.0
+    N = 200
+    dx = L / N
+    dt = 0.001
+    T = 0.1
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1 # eps = 0.01 is unstable (oscillatory) beyond the Hopf bifurcation. Doing stable for now.
+
+    def cb(x, f): 
+        print(lg.norm(f))
+
+    F = lambda x: psi(x, T, delta, a0, a1, eps, dx, dt)
+    x_array = np.linspace(0.0, L, N)
+    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    x0 = np.concatenate((u0, v0))
+    try:
+        x_ss = opt.newton_krylov(F, x0, callback=cb, rdiff=1.e-8, verbose=True, f_tol=1.e-6)
+    except opt.NoConvergence as err:
+        str_err = str(err)
+        str_err = str_err[1:len(str_err)-1]
+        x_ss = np.fromstring(str_err, dtype=float, sep=' ')
+
+    u_ss = x_ss[0:N]
+    v_ss = x_ss[N:]
+    x_array = np.linspace(0.0, L, N)
+    plt.plot(x_array, u_ss, label=r'$u(x, t=\infty)$')
+    plt.plot(x_array, v_ss, label=r'$v(x, t=\infty)$')
+    plt.plot(x_array, u0, label=r'$u(x, t=0)$')
+    plt.plot(x_array, v0, label=r'$v(x, t=0)$')
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     plotFitzHughNagumoSolution()
+    #findSteadyState()

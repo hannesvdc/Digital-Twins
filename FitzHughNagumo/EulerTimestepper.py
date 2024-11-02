@@ -108,12 +108,14 @@ def plotFitzHughNagumoSolution():
     plt.show()
 
 def findSteadyState():
-    # Model parameters
+    # Method parameters
     L = 20.0
     N = 200
     dx = L / N
     dt = 0.001
-    T = 0.1
+    T = 1.0
+
+    # Model parameters
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
@@ -122,11 +124,13 @@ def findSteadyState():
 
     F = lambda x: psi(x, T, dx, dt, params)
     x_array = np.linspace(0.0, L, N)
-    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     x0 = np.concatenate((u0, v0))
+    tolerance = 1.e-14
     try:
-        x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, verbose=True, f_tol=1.e-6)
+        cb = lambda x, f: print(lg.norm(f))
+        x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, callback=cb, f_tol=tolerance)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
@@ -143,5 +147,5 @@ def findSteadyState():
     plt.show()
 
 if __name__ == '__main__':
-    plotFitzHughNagumoSolution()
-    #findSteadyState()
+    #plotFitzHughNagumoSolution()
+    findSteadyState()

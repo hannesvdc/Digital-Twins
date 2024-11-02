@@ -94,7 +94,7 @@ def plotFitzHughNagumoSolution():
     v_max = np.max(v_solution)
     v_min = np.min(v_solution)
     print(u_max, u_min, v_max, v_min)
-    print('psi', lg.norm(psi(np.concatenate((u,v)), 0.1, delta, a0, a1, eps, dx, dt)))
+    print('psi', lg.norm(psi(np.concatenate((u,v)), 0.1, dx, dt, params)))
     plt.figure()
     plt.pcolor(X, Y, u_solution, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
     plt.xlabel(r'$x$')

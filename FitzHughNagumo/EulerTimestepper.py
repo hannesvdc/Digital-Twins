@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def sigmoid(x_array, x_center, y_center, x_scale, y_scale):
+def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
 
 def fhn_rhs(u, v, delta, a0, a1, eps, dx):
@@ -61,7 +61,7 @@ def plotFitzHughNagumoSolution():
 
         if n > 0 and n % 10 == 0:
             u_solution[n // 10, :] = u
-            v_solution[n // 10, :] = u
+            v_solution[n // 10, :] = v
 
     # Plotting the final result
     x_plot_array = np.linspace(0.0, T, u_solution.shape[1]+1)
@@ -73,10 +73,12 @@ def plotFitzHughNagumoSolution():
     plt.legend()
 
     X, Y = np.meshgrid(x_plot_array, t_plot_array)
+    v_solution = sigmoid(v_solution, y_scale=2.0, y_center=-1.0, x_scale=0.05)
     u_max = np.max(u_solution)
     u_min = np.min(u_solution)
     v_max = np.max(v_solution)
     v_min = np.min(v_solution)
+    print(u_max, u_min, v_max, v_min)
     plt.figure()
     plt.pcolor(X, Y, u_solution, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
     plt.xlabel(r'$x$')

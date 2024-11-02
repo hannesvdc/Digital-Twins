@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
 
-def fhn_rhs(u, v, delta, a0, a1, eps, dx):
+def fhn_rhs(u, v, dx, params):
     u_left = np.roll(u, -1)
     u_right = np.roll(u, 1)
     v_left = np.roll(v, -1)
@@ -16,12 +16,12 @@ def fhn_rhs(u, v, delta, a0, a1, eps, dx):
     v_xx = (v_left - 2.0*v + v_right) / dx**2
 
     u_rhs = u_xx + u - u**3 - v
-    v_rhs = delta * v_xx + eps * (u - a1*v - a0)
+    v_rhs = params['delta'] * v_xx + params['eps'] * (u - params['a1']*v - params['a0'])
 
     return u_rhs, v_rhs
 
-def fhn_euler(u, v, delta, a0, a1, eps, dx, dt):
-    u_rhs, v_rhs = fhn_rhs(u, v, delta, a0, a1, eps, dx)
+def fhn_euler(u, v, dx, dt, params):
+    u_rhs, v_rhs = fhn_rhs(u, v, dx, params)
     u_new = u + dt * u_rhs
     v_new = v + dt * v_rhs
 
@@ -33,16 +33,16 @@ def fhn_euler(u, v, delta, a0, a1, eps, dx, dt):
 
     return u_new, v_new
 
-def fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T):
-    for n in range(int(T / dt)):
-        u, v = fhn_euler(u, v, delta, a0, a1, eps, dx, dt)
+def fhn_euler_timestepper(u, v, dx, dt, T, params):
+    for _ in range(int(T / dt)):
+        u, v = fhn_euler(u, v, dx, dt, params)
     return u, v
 
-def psi(x, T, delta, a0, a1, eps, dx, dt):
+def psi(x, T, dx, dt, params):
     N = x.size // 2
     u, v = x[0:N], x[N:]
 
-    u_new, v_new = fhn_euler_timestepper(u, v, delta, a0, a1, eps, dx, dt, T)
+    u_new, v_new = fhn_euler_timestepper(u, v, dx, dt, T, params)
     return np.concatenate((u - u_new, v - v_new)) / T
 
 def plotFitzHughNagumoSolution():
@@ -54,6 +54,7 @@ def plotFitzHughNagumoSolution():
     a1 = 2.0
     delta = 4.0
     eps = 0.1 # 0.01 originally for the spatio-temporal oscillations
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     # Initial condition
     x_array = np.linspace(0.0, L, N)
@@ -71,7 +72,7 @@ def plotFitzHughNagumoSolution():
     u_solution[0,:] = u0
     v_solution[0,:] = v0
     for n in range(int(T / dt)):
-        u, v = fhn_euler(u, v, delta, a0, a1, eps, dx, dt)
+        u, v = fhn_euler(u, v, dx, dt, params)
 
         if n > 0 and n % 10 == 0:
             u_solution[n // 10, :] = u
@@ -117,11 +118,12 @@ def findSteadyState():
     a1 = 2.0
     delta = 4.0
     eps = 0.1 # eps = 0.01 is unstable (oscillatory) beyond the Hopf bifurcation. Doing stable for now.
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     def cb(x, f): 
         print(lg.norm(f))
 
-    F = lambda x: psi(x, T, delta, a0, a1, eps, dx, dt)
+    F = lambda x: psi(x, T, dx, dt, params)
     x_array = np.linspace(0.0, L, N)
     u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)

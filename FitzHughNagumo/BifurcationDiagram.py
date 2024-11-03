@@ -11,7 +11,7 @@ N = 200
 L = 20.0
 dx = L / N
 dt = 0.001
-T = 0.1
+T = 1.0
 params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0, 'eps': 0.0}
 
 def G(x, eps):
@@ -88,7 +88,7 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
             print('Minimal Arclength Size is too large. Aborting.')
             return x_path, eps_path
 		
-        print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(n, np.mean(x[0:N]), eps)
+        print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, np.mean(x[0:N]), eps, ds)
         print(print_str)
 
     return np.array(x_path), np.array(eps_path)
@@ -110,13 +110,13 @@ def plotBifurcationDiagram():
     # Continuation Parameters
     max_steps = 10000
     ds_min = 1.e-6
-    ds_max = 0.01
+    ds_max = 0.01 * M
     ds = 0.001
 
     # Calculate the tangent to the path at the initial condition x0
     rng = rd.RandomState()
     random_tangent = rng.normal(0.0, 1.0, M+1)
-    initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent/lg.norm(random_tangent), M, tolerance)
+    initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
     # Do actual numerical continuation in both directions

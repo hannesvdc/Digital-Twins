@@ -86,7 +86,7 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
         else:
 			# This case should never happpen under normal circumstances
             print('Minimal Arclength Size is too large. Aborting.')
-            return x_path, eps_path
+            return np.array(x_path), np.array(eps_path)
 		
         print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, np.mean(x[0:N]), eps, ds)
         print(print_str)
@@ -108,9 +108,9 @@ def plotBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 10000
+    max_steps = 1000
     ds_min = 1.e-6
-    ds_max = 0.01 * M
+    ds_max = 0.01
     ds = 0.001
 
     # Calculate the tangent to the path at the initial condition x0
@@ -128,6 +128,7 @@ def plotBifurcationDiagram():
     plt.plot(eps2_path, x2_path)
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
+    plt.show()
 
 if __name__ == '__main__':
     plotBifurcationDiagram()

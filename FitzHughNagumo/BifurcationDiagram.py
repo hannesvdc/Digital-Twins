@@ -46,7 +46,7 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     else:
         return -tangent
 
-def numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance):
+def numericalContinuation(x0, eps0, initial_tangent, max_steps, ds, ds_min, ds_max, tolerance):
     M = 2*N
     x = np.copy(x0)
     eps = eps0
@@ -56,13 +56,7 @@ def numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance):
     print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
     print(print_str)
 
-	# Choose intial tangent (guess). No idea why yet, but we need to
-	# negate the tangent to find the actual search direction
-    rng = rd.RandomState()
-    random_tangent = rng.normal(0.0, 1.0, M+1)
-    initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent/lg.norm(random_tangent), M, tolerance)
-    prev_tangent = -initial_tangent / lg.norm(initial_tangent)
-
+    prev_tangent = np.copy(initial_tangent)
     for n in range(1, max_steps+1):
 		# Determine the tangent to the curve at current point
 		# By solving an underdetermined system with quadratic constraint norm(tau)**2 = 1
@@ -114,8 +108,11 @@ def plotBifurcationDiagram():
     u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     x0 = np.concatenate((u0, v0))
-    F = lambda x: G(x, eps0)
+
+    # Calculate a good iniitial condition x0 on the path
+    M = 2 * N
     tolerance = 1.e-12
+    F = lambda x: G(x, eps0)
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
@@ -124,10 +121,18 @@ def plotBifurcationDiagram():
     ds_max = 0.01
     ds = 0.001
 
-    # Do actual numerical continuation
-    x_path, eps_path = numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance)
+    # Calculate the tangent to the path at the initial condition x0
+    rng = rd.RandomState()
+    random_tangent = rng.normal(0.0, 1.0, M+1)
+    initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent/lg.norm(random_tangent), M, tolerance)
+    initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
-    plt.plot(eps_path, x_path)
+    # Do actual numerical continuation in both directions
+    x1_path, eps1_path = numericalContinuation(x0, eps0,  initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path = numericalContinuation(x0, eps0, -initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
+
+    plt.plot(eps1_path, x1_path)
+    plt.plot(eps2_path, x2_path)
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
 

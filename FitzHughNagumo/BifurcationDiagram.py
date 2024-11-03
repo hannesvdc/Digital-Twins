@@ -26,13 +26,6 @@ def dGdeps(x, eps):
     rdiff = 1.e-8
     return (G(x, eps + rdiff) - G(x, eps)) / rdiff
 
-def calculateMatrix(func, M):
-    e = np.eye(M)
-    matrix = np.zeros((M, M))
-    for m in range(M):
-        matrix[:,m] = func(e[:,m])
-    return matrix
-
 def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     x0 = prev_tangent[0:M] / prev_tangent[M]
     A = slg.LinearOperator(matvec=Gx_v, shape=(M,M))
@@ -46,17 +39,16 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     else:
         return -tangent
 
-def numericalContinuation(x0, eps0, initial_tangent, max_steps, ds, ds_min, ds_max, tolerance):
-    M = 2*N
+def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance):
     x = np.copy(x0)
     eps = eps0
     x_path = [np.mean(x[0:N])]
     eps_path = [eps]
+    prev_tangent = np.copy(initial_tangent)
 
     print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
     print(print_str)
 
-    prev_tangent = np.copy(initial_tangent)
     for n in range(1, max_steps+1):
 		# Determine the tangent to the curve at current point
 		# By solving an underdetermined system with quadratic constraint norm(tau)**2 = 1
@@ -96,7 +88,7 @@ def numericalContinuation(x0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
             print('Minimal Arclength Size is too large. Aborting.')
             return x_path, eps_path
 		
-        print_str = 'Step n: {0:3d}\t <x>: {1:4f}\t eps: {2:4f}'.format(n, np.mean(x[0:N]), eps)
+        print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(n, np.mean(x[0:N]), eps)
         print(print_str)
 
     return np.array(x_path), np.array(eps_path)
@@ -128,9 +120,10 @@ def plotBifurcationDiagram():
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
     # Do actual numerical continuation in both directions
-    x1_path, eps1_path = numericalContinuation(x0, eps0,  initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path = numericalContinuation(x0, eps0, -initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
+    x1_path, eps1_path = numericalContinuation(x0, eps0,  initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path = numericalContinuation(x0, eps0, -initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
 
+    # Plot both branches
     plt.plot(eps1_path, x1_path)
     plt.plot(eps2_path, x2_path)
     plt.xlabel(r'$\varepsilon$')

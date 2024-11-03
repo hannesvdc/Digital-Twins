@@ -26,6 +26,7 @@ def dGdeps(x, eps):
     rdiff = 1.e-8
     return (G(x, eps + rdiff) - G(x, eps)) / rdiff
 
+# Calculates the tangent to the path at the current point as (Gx^{-1} G_eps, -1).
 def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     x0 = prev_tangent[0:M] / prev_tangent[M]
     A = slg.LinearOperator(matvec=Gx_v, shape=(M,M))
@@ -42,16 +43,15 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
 def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance):
     x = np.copy(x0)
     eps = eps0
-    x_path = [np.mean(x[0:N])]
-    eps_path = [eps]
     prev_tangent = np.copy(initial_tangent)
 
-    print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
+    x_path = [np.mean(x[0:N])]
+    eps_path = [eps]
+    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
     print(print_str)
 
     for n in range(1, max_steps+1):
-		# Determine the tangent to the curve at current point
-		# By solving an underdetermined system with quadratic constraint norm(tau)**2 = 1
+		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)
         Geps = dGdeps(x, eps)
         tangent = computeTangent(Gx_v, Geps, prev_tangent, M, tolerance)
@@ -81,14 +81,13 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
 
                 break
             except:
-                # Decrease arclength if Newton routine needs more than max_it iterations
+                # Decrease arclength if the corrector fails.
                 ds = max(0.5*ds, ds_min)
         else:
-			# This case should never happpen under normal circumstances
             print('Minimal Arclength Size is too large. Aborting.')
             return np.array(x_path), np.array(eps_path)
 		
-        print_str = 'Step n: {0:3d}\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, np.mean(x[0:N]), eps, ds)
+        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, x_path[-1], eps, ds)
         print(print_str)
 
     return np.array(x_path), np.array(eps_path)
@@ -101,14 +100,14 @@ def plotBifurcationDiagram():
     v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     x0 = np.concatenate((u0, v0))
 
-    # Calculate a good iniitial condition x0 on the path
+    # Calculate a good initial condition x0 on the path
     M = 2 * N
     tolerance = 1.e-12
     F = lambda x: G(x, eps0)
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 1000
+    max_steps = 1500
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001
@@ -124,8 +123,8 @@ def plotBifurcationDiagram():
     x2_path, eps2_path = numericalContinuation(x0, eps0, -initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Plot both branches
-    plt.plot(eps1_path, x1_path)
-    plt.plot(eps2_path, x2_path)
+    plt.plot(eps1_path, x1_path, color='k')
+    plt.plot(eps2_path, x2_path, color='k')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
     plt.show()

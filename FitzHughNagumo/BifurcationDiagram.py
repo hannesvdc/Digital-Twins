@@ -11,7 +11,7 @@ N = 200
 L = 20.0
 dx = L / N
 dt = 0.001
-T = 1.0
+T = 0.1
 params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0, 'eps': 0.0}
 
 def G(x, eps):
@@ -108,7 +108,7 @@ def plotBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 1000
+    max_steps = 10000
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001

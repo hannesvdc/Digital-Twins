@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as lg
 import numpy.random as rd
+import scipy.sparse.linalg as slg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
@@ -33,16 +34,17 @@ def calculateMatrix(func, M):
     return matrix
 
 def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
-    DG_matrix = calculateMatrix(Gx_v, M)
-    tangent = np.append(lg.solve(DG_matrix, G_eps), -1.0) # Solve using gmres
+    x0 = prev_tangent[0:M] / prev_tangent[M]
+    A = slg.LinearOperator(matvec=Gx_v, shape=(M,M))
+
+    _tangent = slg.gmres(A, G_eps, x0=x0, atol=tolerance)[0]
+    tangent = np.append(_tangent, -1.0)
     tangent = tangent / lg.norm(tangent)
-    print('tangent', tangent)
 
     if np.dot(tangent, prev_tangent) > 0:
         return tangent
     else:
         return -tangent
-
 
 def numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance):
     M = 2*N

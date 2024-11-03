@@ -19,21 +19,30 @@ def G(x, eps):
 
 def dGdx_v(x, v, eps):
     rdiff = 1.e-8
-    norm_v = lg.norm(v)
     return (G(x + rdiff * v, eps) - G(x, eps)) / rdiff
 
 def dGdeps(x, eps):
     rdiff = 1.e-8
     return (G(x, eps + rdiff) - G(x, eps)) / rdiff
 
-def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
-    DG = lambda v: Gx_v(v[0:M]) + G_eps * v[M]
-    g_tangent = lambda v: np.append(DG(v), np.dot(v, v) - 1.0)
+def calculateMatrix(func, M):
+    e = np.eye(M)
+    matrix = np.zeros((M, M))
+    for m in range(M):
+        matrix[:,m] = func(e[:,m])
+    return matrix
 
-    cb = lambda a, b: print(lg.norm(b))
-    tangent = opt.newton_krylov(F=g_tangent, xin=prev_tangent, f_tol=tolerance, callback=cb)
-	
-    return tangent
+def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
+    DG_matrix = calculateMatrix(Gx_v, M)
+    tangent = np.append(lg.solve(DG_matrix, G_eps), -1.0) # Solve using gmres
+    tangent = tangent / lg.norm(tangent)
+    print('tangent', tangent)
+
+    if np.dot(tangent, prev_tangent) > 0:
+        return tangent
+    else:
+        return -tangent
+
 
 def numericalContinuation(x0, eps0, max_steps, ds, ds_min, ds_max, tolerance):
     M = 2*N

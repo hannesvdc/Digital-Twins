@@ -14,7 +14,7 @@ def test1():
     v0 = rng.normal(0.0, 1.0, 3)
     lam, v = shiftInvertArnoldi(A, sigma, v0 / lg.norm(v0), 1.e-12)
 
-    print(lam, v)
+    print(lam, v, rayleigh(A, v))
 
 if __name__ == '__main__':
     test1()

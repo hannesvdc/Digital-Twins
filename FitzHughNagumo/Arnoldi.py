@@ -15,7 +15,7 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
     Q = np.zeros((M, n + 1))
     Q[:, 0] = q / np.sqrt(np.vdot(q, q))
     for k in range(1, M):
-        q = slg.gmres(B, Q[:,k-1], atol=tolerance)[0]
+        q = slg.gmres(B, Q[:,k-1], x0=Q[:,k-1], atol=tolerance)[0]
 
         for j in range(k):
             h[j, k - 1] = np.vdot(Q[:, j], q)

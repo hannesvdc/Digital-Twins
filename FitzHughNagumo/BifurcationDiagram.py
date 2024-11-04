@@ -112,7 +112,7 @@ def plotBifurcationDiagram():
 
     # Calculate a good initial condition x0 on the path
     M = 2 * N
-    tolerance = 1.e-12
+    tolerance = 1.e-6
     F = lambda x: G(x, eps0)
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 

@@ -5,11 +5,10 @@ import matplotlib.pyplot as plt
 
 def shiftInvertArnoldi(A, sigma, v0, tolerance):
     M = v0.size
-    B = slg.LinearOperator(shape=(M, M), matvec=lambda _v: A(_v) - sigma * _v)
+    B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - sigma * w)
     v = np.copy(v0)
 
     n = M-1
-    v = np
     h = np.zeros((n + 1, n))
     Q = np.zeros((M, n + 1))
     Q[:, 0] = v / lg.norm(v) 
@@ -21,7 +20,7 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance):
             v = v - h[j, k - 1] * Q[:, j]
         h[k, k - 1] = lg.norm(v)
 
-        if h[k, k - 1] < tolerance:  # Add the produced vector to the list, unless
+        if h[k, k - 1] < tolerance:
             break
         Q[:, k] = v / h[k, k - 1]
     

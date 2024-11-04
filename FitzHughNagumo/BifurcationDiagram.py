@@ -93,7 +93,7 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
         # Calculate the eigenvalue of Gx_v with minimal real part
         if n % 25 == 0:
             A = lambda w: dGdx_v(x, w, eps)
-            sigma, q = shiftInvertArnoldi(A, sigma, q, tolerance, n=1000)
+            sigma, q = shiftInvertArnoldi(A, sigma, q, tolerance)
             eig_vals.append(sigma)
             q = q / np.vdot(q, q)
 		

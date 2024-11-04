@@ -19,16 +19,17 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance):
             h[j, k - 1] = np.dot(Q[:, j].conj(), v)
             v = v - h[j, k - 1] * Q[:, j]
         h[k, k - 1] = lg.norm(v)
+        v = v / h[k, k-1]
 
         if h[k, k - 1] < tolerance:
             break
-        Q[:, k] = v / h[k, k - 1]
+        Q[:, k] = v
     
     # Compute the eigenvalues of H using the QR-algorithm (I'm guessing this is what scipy.eig does)
     Hk = h[0:k, 0:k]
-    lambdas, eigvs = lg.eig(Hk)
+    lambdas = lg.eigvals(Hk)
     min_index = np.argmin(np.real(lambdas))
 
     # Shift back with sigma and return the eigenvector as well (Should be v?)
-    return sigma + lambdas[min_index], eigvs[:,min_index]
+    return sigma + lambdas[min_index], v
 

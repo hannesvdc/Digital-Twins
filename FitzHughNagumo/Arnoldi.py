@@ -11,8 +11,8 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
     B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - sigma * w)
     q = np.copy(v0)
 
-    h = np.zeros((n + 1, n))
-    Q = np.zeros((M, n + 1))
+    h = np.zeros((n + 1, n), dtype=np.complex64)
+    Q = np.zeros((M, n + 1), dtype=np.complex64)
     Q[:, 0] = q / np.sqrt(np.vdot(q, q))
     for k in range(1, M):
         q = slg.gmres(B, Q[:,k-1], x0=Q[:,k-1], atol=tolerance)[0]

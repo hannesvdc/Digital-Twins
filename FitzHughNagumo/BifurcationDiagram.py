@@ -6,6 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
+from Arnoldi import shiftInvertArnoldi
 
 N = 200
 L = 20.0
@@ -40,7 +41,7 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     else:
         return -tangent
 
-def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance):
+def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance):
     x = np.copy(x0)
     eps = eps0
     prev_tangent = np.copy(initial_tangent)
@@ -50,6 +51,8 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
     print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
     print(print_str)
 
+    eig_vals = [sigma]
+    q = np.copy(q0)
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)
@@ -85,12 +88,19 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
                 ds = max(0.5*ds, ds_min)
         else:
             print('Minimal Arclength Size is too large. Aborting.')
-            return np.array(x_path), np.array(eps_path)
+            return np.array(x_path), np.array(eps_path), np.array(eig_vals)
+        
+        # Calculate the eigenvalue of Gx_v with minimal real part
+        if n % 25 == 0:
+            A = lambda w: dGdx_v(x, w, eps)
+            sigma, q = shiftInvertArnoldi(A, sigma, q, tolerance, n=1000)
+            eig_vals.append(sigma)
+            q = q / np.vdot(q, q)
 		
         print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, x_path[-1], eps, ds)
         print(print_str)
 
-    return np.array(x_path), np.array(eps_path)
+    return np.array(x_path), np.array(eps_path), np.array(eig_vals)
 
 def plotBifurcationDiagram():
     # Construct the initial point on the path
@@ -118,15 +128,29 @@ def plotBifurcationDiagram():
     initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
+    # Calculate starting eigenvalue with mijnimal real part and eigenvector
+    A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
+    eig_vals, eig_vecs = slg.eigs(A, k=M-2, v0=random_tangent[0:M])
+    min_real_index = np.argmin(np.real(eig_vals))
+    sigma = eig_vals[min_real_index]
+    v0 = eig_vecs[:,min_real_index]
+
     # Do actual numerical continuation in both directions
-    x1_path, eps1_path = numericalContinuation(x0, eps0,  initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path = numericalContinuation(x0, eps0, -initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Plot both branches
-    plt.plot(eps1_path, x1_path, color='k')
-    plt.plot(eps2_path, x2_path, color='k')
+    plt.plot(eps1_path, x1_path, color='blue')
+    plt.plot(eps2_path, x2_path, color='red')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
+
+    plt.figure()
+    plt.scatter(np.real(eig_vals1), np.imag(eig_vals1), color='blue', label='Branch 1')
+    plt.scatter(np.real(eig_vals2), np.imag(eig_vals2), color='red', label='Branch 2')
+    plt.ylabel('Imaginary') 
+    plt.xlabel('Real')
+    plt.legend()
     plt.show()
 
 if __name__ == '__main__':

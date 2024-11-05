@@ -131,15 +131,15 @@ def plotBifurcationDiagram():
 
     # Calculate starting eigenvalue with mijnimal real part and eigenvector
     A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
-    eig_vals, eig_vecs = slg.eigs(A, k=M-2, v0=random_tangent[0:M])
-    min_real_index = np.argmin(np.real(eig_vals))
-    sigma = eig_vals[min_real_index]
-    v0 = eig_vecs[:,min_real_index]
-    print('Initial Sigma', sigma)
+    A_matrix = np.zeros((M, M))
+    for k in range(M):
+        A_matrix[:,k] = A(np.eye(M)[:,k])
+    lams = lg.eigvals(A_matrix)
+    sigma = lams[np.argmin(np.real(lams))]
+    print('sigma', sigma)
 
-    lam_A, vec_A = shiftInvertArnoldiSimple(A, 0.0, random_tangent[0:M], tolerance)
+    lam_A, vec_A = shiftInvertArnoldiSimple(A, np.round(sigma, decimals=2), random_tangent[0:M], tolerance)
     print(lam_A, A(vec_A) - lam_A * vec_A)
-    #print(eig_vals)
 
     # Do actual numerical continuation in both directions
     x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)

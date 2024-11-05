@@ -136,13 +136,20 @@ def plotBifurcationDiagram():
         A_matrix[:,k] = A(np.eye(M)[:,k])
     eig_vals, eig_vecs = lg.eig(A_matrix)
     print(eig_vals)
-    sigma = eig_vals[np.argmin(np.real(eig_vals))]
-    q0 = eig_vecs[:, np.argmin(np.real(eig_vals))]
-    print('sigma', sigma)
+    sigma_min_real = eig_vals[np.argmin(np.real(eig_vals))]
+    q0_min_real = eig_vecs[:, np.argmin(np.real(eig_vals))]
+    sigma_min_complex = eig_vals[2]
+    q0_min_complex = eig_vecs[:,2]
+    print('sigma', sigma_min_real, sigma_min_complex)
 
     # Do actual numerical continuation in both directions
-    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    if initial_tangent[-1] < 0.0: # Decreasing eps
+        print('Increasing eps first')
+        sign = 1.0
+    else:
+        sign = -1.0
+    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  sign * initial_tangent, sigma_min_real, q0_min_real, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -sign * initial_tangent, sigma_min_complex, q0_min_complex, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Plot both branches
     plt.plot(eps1_path, x1_path, color='blue')
@@ -151,7 +158,11 @@ def plotBifurcationDiagram():
     plt.ylabel(r'$<u>$')
 
     plt.figure()
-    plt.scatter(np.real(eig_vals1), np.imag(eig_vals1), color='blue', label='Branch 1')
+    plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(eig_vals1), color='blue', label='Branch 1')
+    plt.xlabel('Continuation Step')
+    plt.ylabel('Eigenvalue')
+    
+    plt.figure()
     plt.scatter(np.real(eig_vals2), np.imag(eig_vals2), color='red', label='Branch 2')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')

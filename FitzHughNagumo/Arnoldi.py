@@ -47,7 +47,7 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
 def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-2):
     # Add a random shift to sigma to reduce change of overflow errors
     decimals = min(2, int(np.abs(np.floor(np.log10(np.abs(sigma))))))
-    shift = sigma + sigma / np.abs(sigma) * 10**(-decimals) * rng.normal(0.0, 1.0)
+    shift = sigma + sigma / np.abs(sigma) * 10**(-decimals) * rng.normal(1.0, 1.0)
 
     M = v0.size
     B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - shift * w)

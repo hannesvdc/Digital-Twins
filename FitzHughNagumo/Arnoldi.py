@@ -27,11 +27,34 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
             break
         Q[:, k] = q
     
-    # Compute the eigenvalues of H using the QR-algorithm (I'm guessing this is what scipy.eig does)
+    # Compute the eigenvalues of H using the QR-algorithm
     Hk = h[0:k, 0:k]
     lams_H, vecs_H = lg.eig(Hk)
     lams_A = sigma + 1.0 / lams_H
-    index = np.argmin(np.real(lams_A))
-    vec = np.dot(Q[:,0:k], vecs_H[:,index])
 
-    return lams_A[index], vec
+    index = np.argmin(np.real(lams_A))
+    lam_A = lams_A[index]
+    vec = np.dot(Q[:,0:k], vecs_H[:,index])
+    if np.abs(lam_A - sigma) > np.abs(lam_A.conj() - sigma):
+        lam_A = np.conjugate(lam_A)
+        vec = np.conjugate(np.dot(Q[:,0:k], vecs_H[:,index]))
+
+    return lam_A, vec
+
+def shiftInvertArnoldiSimple(A, sigma, v0, tolerance):
+    M = v0.size
+    B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - sigma * w)
+    q = np.copy(v0)
+    prev_coef = rayleigh(A, q)
+
+    for _ in range(1, M):
+        q = slg.gmres(B, q, x0=q, atol=tolerance)[0]
+        q = q / np.vdot(q, q)
+
+        coef = rayleigh(A, q)
+        print(coef, np.abs((coef - prev_coef) / prev_coef))
+        if np.abs((coef - prev_coef) / prev_coef) < tolerance:
+            return coef, q
+        prev_coef = coef
+        
+    return coef, q

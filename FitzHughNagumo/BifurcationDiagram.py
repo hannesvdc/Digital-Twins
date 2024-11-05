@@ -6,7 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
-from Arnoldi import shiftInvertArnoldi
+from Arnoldi import shiftInvertArnoldi, shiftInvertArnoldiSimple
 
 N = 200
 L = 20.0
@@ -48,11 +48,11 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
 
     x_path = [np.mean(x[0:N])]
     eps_path = [eps]
-    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}'.format(0, x_path[0], eps)
+    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(0, x_path[0], eps, ds, sigma)
     print(print_str)
 
     eig_vals = [sigma]
-    q = np.copy(q0)
+    q = np.copy(q0) / np.vdot(q0, q0)
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)
@@ -91,13 +91,14 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
             return np.array(x_path), np.array(eps_path), np.array(eig_vals)
         
         # Calculate the eigenvalue of Gx_v with minimal real part
-        if n % 25 == 0:
+        if n % 10 == 0:
+            print('calculating eigenvalue')
             A = lambda w: dGdx_v(x, w, eps)
             sigma, q = shiftInvertArnoldi(A, sigma, q, tolerance)
             eig_vals.append(sigma)
             q = q / np.vdot(q, q)
 		
-        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, x_path[-1], eps, ds)
+        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, x_path[-1], eps, ds, sigma)
         print(print_str)
 
     return np.array(x_path), np.array(eps_path), np.array(eig_vals)
@@ -134,6 +135,11 @@ def plotBifurcationDiagram():
     min_real_index = np.argmin(np.real(eig_vals))
     sigma = eig_vals[min_real_index]
     v0 = eig_vecs[:,min_real_index]
+    print('Initial Sigma', sigma)
+
+    lam_A, vec_A = shiftInvertArnoldiSimple(A, 0.0, random_tangent[0:M], tolerance)
+    print(lam_A, A(vec_A) - lam_A * vec_A)
+    #print(eig_vals)
 
     # Do actual numerical continuation in both directions
     x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)

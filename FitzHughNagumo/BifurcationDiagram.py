@@ -94,9 +94,10 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
         if n % 10 == 0:
             print('calculating eigenvalue')
             A = lambda w: dGdx_v(x, w, eps)
-            sigma, q = shiftInvertArnoldi(A, sigma, q, tolerance)
+            sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
             eig_vals.append(sigma)
             q = q / np.vdot(q, q)
+            print('sigma', sigma)
 		
         print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, x_path[-1], eps, ds, sigma)
         print(print_str)
@@ -129,21 +130,19 @@ def plotBifurcationDiagram():
     initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
-    # Calculate starting eigenvalue with mijnimal real part and eigenvector
+    # Calculate starting eigenvalue with minimal real part and eigenvector
     A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
     A_matrix = np.zeros((M, M))
     for k in range(M):
         A_matrix[:,k] = A(np.eye(M)[:,k])
-    lams = lg.eigvals(A_matrix)
-    sigma = lams[np.argmin(np.real(lams))]
+    eig_vals, eig_vecs = lg.eig(A_matrix)
+    sigma = eig_vals[np.argmin(np.real(eig_vals))]
+    q0 = eig_vecs[:, np.argmin(np.real(eig_vals))]
     print('sigma', sigma)
 
-    lam_A, vec_A = shiftInvertArnoldiSimple(A, np.round(sigma, decimals=2), random_tangent[0:M], tolerance)
-    print(lam_A, A(vec_A) - lam_A * vec_A)
-
     # Do actual numerical continuation in both directions
-    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -initial_tangent, sigma, v0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Plot both branches
     plt.plot(eps1_path, x1_path, color='blue')

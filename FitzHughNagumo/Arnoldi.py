@@ -1,10 +1,13 @@
 import numpy as np
 import scipy.linalg as lg
+import numpy.random as rd
 import scipy.sparse.linalg as slg
 import matplotlib.pyplot as plt
 
 def rayleigh(A, q):
     return np.vdot(q, A(q)) / np.vdot(q, q)
+
+rng = rd.RandomState()
 
 def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
     M = v0.size
@@ -41,9 +44,13 @@ def shiftInvertArnoldi(A, sigma, v0, tolerance, n=1000):
 
     return lam_A, vec
 
-def shiftInvertArnoldiSimple(A, sigma, v0, tolerance):
+def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-2):
+    # Add a random shift to sigma to reduce change of overflow errors
+    decimals = min(2, int(np.abs(np.floor(np.log10(np.abs(sigma))))))
+    shift = sigma + sigma / np.abs(sigma) * 10**(-decimals) * rng.normal(0.0, 1.0)
+
     M = v0.size
-    B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - sigma * w)
+    B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - shift * w)
     q = np.copy(v0)
     prev_coef = rayleigh(A, q)
 
@@ -52,8 +59,8 @@ def shiftInvertArnoldiSimple(A, sigma, v0, tolerance):
         q = q / np.vdot(q, q)
 
         coef = rayleigh(A, q)
-        print(coef, np.abs((coef - prev_coef) / prev_coef))
-        if np.abs((coef - prev_coef) / prev_coef) < tolerance:
+        #print(coef, np.abs((coef - prev_coef) / prev_coef))
+        if np.abs((coef - prev_coef) / prev_coef) < report_tolerance:
             return coef, q
         prev_coef = coef
         

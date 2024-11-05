@@ -6,7 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
-from Arnoldi import shiftInvertArnoldi, shiftInvertArnoldiSimple
+from Arnoldi import shiftInvertArnoldiSimple
 
 N = 200
 L = 20.0
@@ -96,7 +96,6 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
             A = lambda w: dGdx_v(x, w, eps)
             sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
             eig_vals.append(sigma)
-            q = q / np.vdot(q, q)
             print('sigma', sigma)
 		
         print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, x_path[-1], eps, ds, sigma)
@@ -136,6 +135,7 @@ def plotBifurcationDiagram():
     for k in range(M):
         A_matrix[:,k] = A(np.eye(M)[:,k])
     eig_vals, eig_vecs = lg.eig(A_matrix)
+    print(eig_vals)
     sigma = eig_vals[np.argmin(np.real(eig_vals))]
     q0 = eig_vecs[:, np.argmin(np.real(eig_vals))]
     print('sigma', sigma)

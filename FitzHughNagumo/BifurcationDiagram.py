@@ -150,8 +150,8 @@ def plotBifurcationDiagram():
     x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -sign * initial_tangent, sigma_min_complex, q0_min_complex, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Plot both branches
-    plt.plot(eps1_path, x1_path, color='blue')
-    plt.plot(eps2_path, x2_path, color='red')
+    plt.plot(eps1_path, x1_path, color='blue', label='Branch 1')
+    plt.plot(eps2_path, x2_path, color='red', label='Branch 2')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
 
@@ -159,6 +159,7 @@ def plotBifurcationDiagram():
     plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(eig_vals1), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
+    plt.legend()
     
     plt.figure()
     plt.scatter(np.real(eig_vals2), np.imag(eig_vals2), color='red', label='Branch 2')

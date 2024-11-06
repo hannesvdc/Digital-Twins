@@ -91,12 +91,11 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
             return np.array(x_path), np.array(eps_path), np.array(eig_vals)
         
         # Calculate the eigenvalue of Gx_v with minimal real part
-        if n % 10 == 0:
-            print('calculating eigenvalue')
-            A = lambda w: dGdx_v(x, w, eps)
-            sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
-            eig_vals.append(sigma)
-            print('sigma', sigma)
+        print('calculating eigenvalue')
+        A = lambda w: dGdx_v(x, w, eps)
+        sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
+        eig_vals.append(sigma)
+        print('sigma', sigma)
 		
         print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, x_path[-1], eps, ds, sigma)
         print(print_str)
@@ -135,7 +134,6 @@ def plotBifurcationDiagram():
     for k in range(M):
         A_matrix[:,k] = A(np.eye(M)[:,k])
     eig_vals, eig_vecs = lg.eig(A_matrix)
-    print(eig_vals)
     sigma_min_real = eig_vals[np.argmin(np.real(eig_vals))]
     q0_min_real = eig_vecs[:, np.argmin(np.real(eig_vals))]
     sigma_min_complex = eig_vals[2]

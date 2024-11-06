@@ -52,7 +52,7 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
     print(print_str)
 
     eig_vals = [sigma]
-    q = np.copy(q0) / np.vdot(q0, q0)
+    q = q0 / np.sqrt(np.vdot(q0, q0))
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)

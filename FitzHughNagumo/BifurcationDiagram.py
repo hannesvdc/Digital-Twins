@@ -46,9 +46,9 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
     eps = eps0
     prev_tangent = np.copy(initial_tangent)
 
-    x_path = [np.mean(x[0:N])]
+    x_path = [np.copy(x)]
     eps_path = [eps]
-    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(0, x_path[0], eps, ds, sigma)
+    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(0, np.mean(x_path[0][0:N]), eps, ds, sigma)
     print(print_str)
 
     eig_vals = [sigma]
@@ -75,7 +75,7 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
                 z_new = opt.newton_krylov(F, z_p, f_tol=tolerance)
                 x = z_new[0:M]
                 eps = z_new[M]
-                x_path.append(np.mean(x[0:N]))
+                x_path.append(np.copy(x))
                 eps_path.append(eps)
 
 				# Updating the arclength step and tangent vector
@@ -88,7 +88,7 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
                 ds = max(0.5*ds, ds_min)
         else:
             print('Minimal Arclength Size is too large. Aborting.')
-            return np.array(x_path), np.array(eps_path), np.array(eig_vals)
+            return x_path, eps_path, eig_vals
         
         # Calculate the eigenvalue of Gx_v with minimal real part
         print('calculating eigenvalue')
@@ -97,10 +97,10 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
         eig_vals.append(sigma)
         print('sigma', sigma)
 		
-        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, x_path[-1], eps, ds, sigma)
+        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, np.mean(x_path[-1][0:N]), eps, ds, sigma)
         print(print_str)
 
-    return np.array(x_path), np.array(eps_path), np.array(eig_vals)
+    return x_path, eps_path, eig_vals
 
 def plotBifurcationDiagram():
     # Construct the initial point on the path
@@ -149,20 +149,48 @@ def plotBifurcationDiagram():
     x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  sign * initial_tangent, sigma_min_real, q0_min_real, M, max_steps, ds, ds_min, ds_max, tolerance)
     x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -sign * initial_tangent, sigma_min_complex, q0_min_complex, M, max_steps, ds, ds_min, ds_max, tolerance)
 
+    # Calculate eigenvalues on x1_path and x2_path
+    plot_x1_path = []
+    plot_x2_path = []
+    correct_eig1_vals = []
+    correct_eig2_vals = []
+    for i in range(len(x1_path)):
+        plot_x1_path.append(np.mean(x1_path[i][0:N]))
+        plot_x2_path.append(np.mean(x2_path[i][0:N]))
+
+        A1 = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x1_path[i], w, eps1_path[i]))
+        A1_matrix = np.zeros((M, M))
+        for k in range(M):
+            A1_matrix[:,k] = A1(np.eye(M)[:,k])
+        eig_vals1 = lg.eigvals(A1_matrix)
+        correct_eig1_vals.append(eig_vals1[np.argmin(np.real(eig_vals1))])
+
+        A2 = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x2_path[i], w, eps2_path[i]))
+        A2_matrix = np.zeros((M, M))
+        for k in range(M):
+            A2_matrix[:,k] = A2(np.eye(M)[:,k])
+        eig_vals2 = np.sort(lg.eigvals(A2_matrix)) # Sort in ascending order
+        for j in range(len(eig_vals2)):
+            if np.imag(eig_vals2[j]) != 0.0:
+                correct_eig2_vals.append(eig_vals2[j])
+                break
+
     # Plot both branches
-    plt.plot(eps1_path, x1_path, color='blue', label='Branch 1')
-    plt.plot(eps2_path, x2_path, color='red', label='Branch 2')
+    plt.plot(eps1_path, plot_x1_path, color='blue', label='Branch 1')
+    plt.plot(eps2_path, plot_x2_path, color='red', label='Branch 2')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
 
     plt.figure()
     plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(eig_vals1), color='blue', label='Branch 1')
+    plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(correct_eig1_vals), color='black', label='Exact Eigenvalues')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
     plt.legend()
     
     plt.figure()
-    plt.scatter(np.real(eig_vals2), np.imag(eig_vals2), color='red', label='Branch 2')
+    plt.scatter(np.real(eig_vals2), np.abs(np.imag(eig_vals2)), color='red', label='Branch 2')
+    plt.scatter(np.real(correct_eig2_vals), np.abs(np.imag(correct_eig2_vals)), color='black', label='Exact Eigenvalues')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')
     plt.legend()

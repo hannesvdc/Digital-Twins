@@ -155,8 +155,12 @@ def plotBifurcationDiagram():
     correct_eig1_vals = []
     correct_eig2_vals = []
     for i in range(len(x1_path)):
+        print('i = ', i)
         plot_x1_path.append(np.mean(x1_path[i][0:N]))
         plot_x2_path.append(np.mean(x2_path[i][0:N]))
+
+        if i % 10 != 0:
+            continue
 
         A1 = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x1_path[i], w, eps1_path[i]))
         A1_matrix = np.zeros((M, M))
@@ -183,7 +187,7 @@ def plotBifurcationDiagram():
 
     plt.figure()
     plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(eig_vals1), color='blue', label='Branch 1')
-    plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(correct_eig1_vals), color='black', label='Exact Eigenvalues')
+    plt.plot(np.linspace(0, max_steps, len(correct_eig1_vals)), np.real(correct_eig1_vals), color='black', label='Exact Eigenvalues')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
     plt.legend()

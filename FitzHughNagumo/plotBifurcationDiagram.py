@@ -13,12 +13,13 @@ T = 1.0
 
 def plotBifurcationDiagram():
     M = 2 * N
-    
+
     # Load Continuation data, Arnoldi and QR data
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
     arnoldi_values = np.load(directory + 'Arnoldi_Eigenvalues.npy')
     qr_values = np.load(directory + 'QR_Eigenvalues.npy')
+    arnoldi_scipy_values = np.load(directory + 'Arnoldi_Scipy_Eigenvalues.npy')
 
     n_steps = bf_data.shape[0]
     plot_x1_path = np.average(bf_data[:,0:N], axis=1)
@@ -34,6 +35,7 @@ def plotBifurcationDiagram():
 
     plt.figure()
     plt.plot(np.linspace(0, n_steps-1, n_steps), np.real(arnoldi_values[0,:]), color='blue', label='Arnoldi Eigenvalues')
+    plt.plot(np.linspace(0, n_steps-1, n_steps), np.real(arnoldi_scipy_values[0,:]), color='purple', label='Arnoldi Scipy Eigenvalues')
     plt.plot(np.linspace(0, n_steps-1, n_steps), np.real(qr_values[0,:]), color='black', label='QR Eigenvalues (Exact)')
     plt.title('Branch 1')
     plt.xlabel('Continuation Step')
@@ -42,6 +44,7 @@ def plotBifurcationDiagram():
     
     plt.figure()
     plt.scatter(np.real(arnoldi_values[1,:]), np.abs(np.imag(arnoldi_values)[1,:]), color='red', label='Arnoldi Eigenvalues')
+    plt.plot(np.linspace(0, n_steps-1, n_steps), np.real(arnoldi_scipy_values[1,:]), color='purple', label='Arnoldi Scipy Eigenvalues')
     plt.scatter(np.real(qr_values[1,:]), np.abs(np.imag(qr_values[1,:])), color='black', label='QR Eigenvalues (Exact)')
     plt.title('Branch 2')
     plt.ylabel('Imaginary')

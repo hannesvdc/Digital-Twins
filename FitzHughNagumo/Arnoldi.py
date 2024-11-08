@@ -36,6 +36,12 @@ def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-3):
             log_shift += 1.0
             pass
 
+def shiftInvertArnoldiScipy(A, sigma, v0, tolerance):
+    A_complex = lambda w : A(w).astype(dtype=np.complex128)
+    eig_vals, eig_vecs = slg.eigs(A_complex, k=1, sigma=sigma, v0=v0, which='LM', return_eigenvectors=True, tol=tolerance)
+
+    return eig_vals[0], eig_vecs[:,0]
+
 def continueArnoldi(G_x, x_path, eps_path, sigma, q, tolerance):
     eigenvalues = [sigma]
     eigenvectors = [q]
@@ -48,6 +54,24 @@ def continueArnoldi(G_x, x_path, eps_path, sigma, q, tolerance):
 
         A = slg.LinearOperator(shape=(M, M), matvec=lambda w: G_x(x, w, eps))
         sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
+
+        eigenvalues.append(sigma)
+        eigenvectors.append(q)
+
+    return np.array(eigenvalues, dtype=np.complex128), np.array(eigenvectors)
+
+def continueArnoldiScipy(G_x, x_path, eps_path, sigma, q, tolerance):
+    eigenvalues = [sigma]
+    eigenvectors = [q]
+
+    n_points = x_path.shape[0]
+    M = x_path.shape[1]
+    for i in range(1, n_points):
+        x = x_path[i,:]
+        eps = eps_path[i]
+
+        A = slg.LinearOperator(shape=(M, M), matvec=lambda w: G_x(x, w, eps))
+        sigma, q = shiftInvertArnoldiScipy(A, sigma, q, tolerance)
 
         eigenvalues.append(sigma)
         eigenvectors.append(q)

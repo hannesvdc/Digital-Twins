@@ -6,7 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
-from Arnoldi import continueArnoldi
+from Arnoldi import continueArnoldi, continueArnoldiScipy
 
 N = 200
 L = 20.0
@@ -161,7 +161,7 @@ def calculateBifurcationDiagram():
     plt.show()
 
 """
-Routine that calculates the approximate eigenvalues of the finite differences Jacobian using the Arnoldi method 
+Routine that calculates the approximate eigenvalues of the finite differences Jacobian using my own Arnoldi method 
 along the continuation path. The Arnoldi method uses a shift equal to the previous eigenvalues + some
 engineering. These are the approxmimate eigenvalues of the timestepper, not of the right-hand side of the PDE.
 """
@@ -204,6 +204,64 @@ def calculateEigenvaluesArnoldi():
 
     # Store both arrays
     np.save(directory + 'Arnoldi_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
+
+    # Plot the results
+    plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
+    plt.xlabel('Continuation Step')
+    plt.ylabel('Eigenvalue')
+    plt.legend()
+    
+    plt.figure()
+    plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
+    plt.ylabel('Imaginary') 
+    plt.xlabel('Real')
+    plt.legend()
+    plt.show()
+
+"""
+Routine that calculates the approximate eigenvalues of the finite differences Jacobian using Scipy's Arnoldi method 
+along the continuation path. The Arnoldi method uses a shift equal to the previous eigenvalues + some
+engineering. These are the approxmimate eigenvalues of the timestepper, not of the right-hand side of the PDE.
+"""
+def calculateEigenvaluesArnoldiScipy():
+    M = 2 * N
+
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    bf_data = np.load(directory + 'bf_diagram.npy')
+    x1_data = bf_data[:,0:M]
+    eps1_data = bf_data[:, M]
+    x2_data = bf_data[:, M+1 : 2*M+1]
+    eps2_data = bf_data[:, 2*M+1]
+
+    # Calculate the initial eigenvalue to high precision to start the process
+    x0 = x1_data[0,:]
+    eps0 = eps1_data[0]
+    A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
+    A_matrix = np.zeros((M, M))
+    for k in range(M):
+        A_matrix[:,k] = A(np.eye(M)[:,k])
+    eig_vals, eig_vecs = lg.eig(A_matrix)
+
+    # Select the smallest real eigenvalue and do Arnoldi along x1_path
+    sigma = np.inf
+    q = np.zeros(M)
+    for index in range(len(eig_vals)):
+        if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
+            sigma = eig_vals[index]
+            q = eig_vecs[:,index]
+    eig1_path = continueArnoldiScipy(dGdx_v, x1_data, eps1_data, np.real(sigma), q)
+
+    # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
+    sigma = np.inf
+    q = np.zeros(M)
+    for index in range(len(eig_vals)):
+        if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
+            sigma = eig_vals[index]
+            q = eig_vecs[:,index]
+    eig2_path = continueArnoldiScipy(dGdx_v, x2_data, eps2_data, sigma, q)
+
+    # Store both arrays
+    np.save(directory + 'Arnoldi_Scipy_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
 
     # Plot the results
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')

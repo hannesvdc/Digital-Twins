@@ -48,11 +48,11 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
 
     x_path = [np.copy(x)]
     eps_path = [eps]
-    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(0, np.mean(x_path[0][0:N]), eps, ds, sigma)
+    print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(0, np.mean(x_path[0][0:N]), eps, ds)
     print(print_str)
 
-    eig_vals = [sigma]
-    q = q0 / np.sqrt(np.vdot(q0, q0))
+    #eig_vals = [sigma]
+    #q = q0 / np.sqrt(np.vdot(q0, q0))
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)
@@ -88,22 +88,21 @@ def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds
                 ds = max(0.5*ds, ds_min)
         else:
             print('Minimal Arclength Size is too large. Aborting.')
-            return x_path, eps_path, eig_vals
+            return x_path, eps_path#, eig_vals
         
         # Calculate the eigenvalue of Gx_v with minimal real part
-        print('calculating eigenvalue')
-        A = lambda w: dGdx_v(x, w, eps)
-        sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
-        eig_vals.append(sigma)
-        print('sigma', sigma)
+        #print('calculating eigenvalue')
+        #A = lambda w: dGdx_v(x, w, eps)
+        #sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
+        #eig_vals.append(sigma)
+        #print('sigma', sigma)
 		
-        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}\t sigma: {4:6f}'.format(n, np.mean(x_path[-1][0:N]), eps, ds, sigma)
+        print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, np.mean(x_path[-1][0:N]), eps, ds)
         print(print_str)
 
-    return x_path, eps_path, eig_vals
+    return x_path, eps_path#, eig_vals
 
-def plotBifurcationDiagram():
-    # Construct the initial point on the path
+def calculateBifurcationDiagram():
     eps0 = 0.1
     x_array = np.linspace(0.0, L, N)
     u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
@@ -117,7 +116,7 @@ def plotBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 1500
+    max_steps = 2000
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001
@@ -129,16 +128,16 @@ def plotBifurcationDiagram():
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
     # Calculate starting eigenvalue with minimal real part and eigenvector
-    A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
-    A_matrix = np.zeros((M, M))
-    for k in range(M):
-        A_matrix[:,k] = A(np.eye(M)[:,k])
-    eig_vals, eig_vecs = lg.eig(A_matrix)
-    sigma_min_real = eig_vals[np.argmin(np.real(eig_vals))]
-    q0_min_real = eig_vecs[:, np.argmin(np.real(eig_vals))]
-    sigma_min_complex = eig_vals[2]
-    q0_min_complex = eig_vecs[:,2]
-    print('sigma', sigma_min_real, sigma_min_complex)
+    #A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
+    #A_matrix = np.zeros((M, M))
+    #for k in range(M):
+    #    A_matrix[:,k] = A(np.eye(M)[:,k])
+    #eig_vals, eig_vecs = lg.eig(A_matrix)
+    #sigma_min_real = eig_vals[np.argmin(np.real(eig_vals))]
+    #q0_min_real = eig_vecs[:, np.argmin(np.real(eig_vals))]
+    #sigma_min_complex = eig_vals[2]
+    #q0_min_complex = eig_vecs[:,2]
+    #print('sigma', sigma_min_real, sigma_min_complex)
 
     # Do actual numerical continuation in both directions
     if initial_tangent[-1] < 0.0: # Decreasing eps
@@ -146,8 +145,28 @@ def plotBifurcationDiagram():
         sign = 1.0
     else:
         sign = -1.0
-    x1_path, eps1_path, eig_vals1 = numericalContinuation(x0, eps0,  sign * initial_tangent, sigma_min_real, q0_min_real, M, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path, eig_vals2 = numericalContinuation(x0, eps0, -sign * initial_tangent, sigma_min_complex, q0_min_complex, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x1_path, eps1_path = numericalContinuation(x0, eps0,  sign * initial_tangent, 0.0, 0.0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path = numericalContinuation(x0, eps0, -sign * initial_tangent, 0.0, 0.0, M, max_steps, ds, ds_min, ds_max, tolerance)
+
+    # Store the full path
+    x1_path = np.array(x1_path)
+    x2_path = np.array(x2_path)
+    eps1_path = np.array(eps1_path)
+    eps2_path = np.array(eps2_path)
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    np.save(directory + 'bf_diagram.npy', np.hstack((x1_path, eps1_path[:,np.newaxis], x2_path, eps2_path[:,np.newaxis])))
+
+    # Plot both branches
+    plot_x1_path = np.average(x1_path[:, 0:N], axis=1)
+    plot_x2_path = np.average(x2_path[:, 0:N], axis=1)
+    plt.plot(eps1_path, plot_x1_path, color='blue', label='Branch 1')
+    plt.plot(eps2_path, plot_x2_path, color='red', label='Branch 2')
+    plt.xlabel(r'$\varepsilon$')
+    plt.ylabel(r'$<u>$')
+    plt.show()
+
+def plotBifurcationDiagram():
+    
 
     # Calculate eigenvalues on x1_path and x2_path
     plot_x1_path = []
@@ -201,4 +220,4 @@ def plotBifurcationDiagram():
     plt.show()
 
 if __name__ == '__main__':
-    plotBifurcationDiagram()
+    calculateBifurcationDiagram()

@@ -52,4 +52,4 @@ def continueArnoldi(G_x, x_path, eps_path, sigma, q, tolerance):
         eigenvalues.append(sigma)
         eigenvectors.append(q)
 
-    return eigenvalues, np.array(eigenvectors)
+    return np.array(eigenvalues, dtype=np.complex128), np.array(eigenvectors)

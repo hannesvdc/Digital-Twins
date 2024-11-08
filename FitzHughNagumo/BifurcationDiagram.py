@@ -6,7 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
-from Arnoldi import shiftInvertArnoldiSimple, continueArnoldi
+from Arnoldi import continueArnoldi
 
 N = 200
 L = 20.0
@@ -116,7 +116,7 @@ def calculateBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 2000
+    max_steps = 1900
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001
@@ -179,7 +179,7 @@ def calculateEigenvaluesArnoldi():
         if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig1_path = continueArnoldi(dGdx_v, x1_data, eps1_data, sigma, q)
+    eig1_path = continueArnoldi(dGdx_v, x1_data, eps1_data, np.real(sigma), q)
 
     # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
     sigma = np.inf
@@ -190,8 +190,11 @@ def calculateEigenvaluesArnoldi():
             q = eig_vecs[:,index]
     eig2_path = continueArnoldi(dGdx_v, x2_data, eps2_data, sigma, q)
 
+    # Store both arrays
+    np.save(directory + 'Arnoldi_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
+
     # Plot the results
-    plt.plot(np.linspace(0, eps1_data[-1], len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
+    plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
     plt.legend()
@@ -203,59 +206,64 @@ def calculateEigenvaluesArnoldi():
     plt.legend()
     plt.show()
 
-def plotBifurcationDiagram():
-    
+def calculateEigenvaluesQR():
+    M = 2 * N
 
-    # Calculate eigenvalues on x1_path and x2_path
-    plot_x1_path = []
-    plot_x2_path = []
-    correct_eig1_vals = []
-    correct_eig2_vals = []
-    for i in range(len(x1_path)):
-        print('i = ', i)
-        plot_x1_path.append(np.mean(x1_path[i][0:N]))
-        plot_x2_path.append(np.mean(x2_path[i][0:N]))
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    bf_data = np.load(directory + 'bf_diagram.npy')
+    x1_data = bf_data[:,0:M]
+    eps1_data = bf_data[:, M]
+    x2_data = bf_data[:, M+1 : 2*M+1]
+    eps2_data = bf_data[:, 2*M+1]
 
-        if i % 10 != 0:
-            continue
-
-        A1 = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x1_path[i], w, eps1_path[i]))
-        A1_matrix = np.zeros((M, M))
+    # Calculate the minimal real eigenvalue along the first branch
+    eig1_path = []
+    for i in range(len(eps1_data)):
+        A = lambda w: dGdx_v(x1_data[i,:], w, eps1_data[i])
+        A_matrix = np.zeros((M, M))
         for k in range(M):
-            A1_matrix[:,k] = A1(np.eye(M)[:,k])
-        eig_vals1 = lg.eigvals(A1_matrix)
-        correct_eig1_vals.append(eig_vals1[np.argmin(np.real(eig_vals1))])
+            A_matrix[:,k] = A(np.eye(M)[:,k])
+        eig_vals = lg.eigvals(A_matrix)
+        
+        # Select the minimal real eigenvalue
+        sigma = np.inf
+        for index in range(len(eig_vals)):
+            if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
+                sigma = eig_vals[index]
+        eig1_path.append(np.real(sigma))
+    eig1_path = np.array(eig1_path)
 
-        A2 = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x2_path[i], w, eps2_path[i]))
-        A2_matrix = np.zeros((M, M))
+    # Calculate the minimal real eigenvalue with imaginary part along the second branch
+    eig2_path = []
+    for i in range(len(eps2_data)):
+        A = lambda w: dGdx_v(x2_data[i,:], w, eps2_data[i])
+        A_matrix = np.zeros((M, M))
         for k in range(M):
-            A2_matrix[:,k] = A2(np.eye(M)[:,k])
-        eig_vals2 = np.sort(lg.eigvals(A2_matrix)) # Sort in ascending order
-        for j in range(len(eig_vals2)):
-            if np.imag(eig_vals2[j]) != 0.0:
-                correct_eig2_vals.append(eig_vals2[j])
-                break
+            A_matrix[:,k] = A(np.eye(M)[:,k])
+        eig_vals = lg.eigvals(A_matrix)
+        
+        # Select the minimal real eigenvalue
+        sigma = np.inf
+        for index in range(len(eig_vals)):
+            if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
+                sigma = eig_vals[index]
+        eig2_path.append(sigma)
+    eig2_path = np.array(eig2_path, dtype=np.complex128)
 
-    # Plot both branches
-    plt.plot(eps1_path, plot_x1_path, color='blue', label='Branch 1')
-    plt.plot(eps2_path, plot_x2_path, color='red', label='Branch 2')
-    plt.xlabel(r'$\varepsilon$')
-    plt.ylabel(r'$<u>$')
+    # Store both arrays
+    np.save(directory + 'QR_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
 
-    plt.figure()
-    plt.plot(np.linspace(0, max_steps, len(eig_vals1)), np.real(eig_vals1), color='blue', label='Branch 1')
-    plt.plot(np.linspace(0, max_steps, len(correct_eig1_vals)), np.real(correct_eig1_vals), color='black', label='Exact Eigenvalues')
+    # Plot them as well
+    plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
     plt.legend()
-    
     plt.figure()
-    plt.scatter(np.real(eig_vals2), np.abs(np.imag(eig_vals2)), color='red', label='Branch 2')
-    plt.scatter(np.real(correct_eig2_vals), np.abs(np.imag(correct_eig2_vals)), color='black', label='Exact Eigenvalues')
+    plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')
     plt.legend()
-    plt.show()
+    plt.show()           
 
 if __name__ == '__main__':
     calculateBifurcationDiagram()

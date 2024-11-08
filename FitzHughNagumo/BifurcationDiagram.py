@@ -41,7 +41,7 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     else:
         return -tangent
 
-def numericalContinuation(x0, eps0, initial_tangent, sigma, q0, M, max_steps, ds, ds_min, ds_max, tolerance):
+def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance):
     x = np.copy(x0)
     eps = eps0
     prev_tangent = np.copy(initial_tangent)
@@ -127,26 +127,14 @@ def calculateBifurcationDiagram():
     initial_tangent = computeTangent(lambda v: dGdx_v(x0, v, eps0), dGdeps(x0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
-    # Calculate starting eigenvalue with minimal real part and eigenvector
-    #A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
-    #A_matrix = np.zeros((M, M))
-    #for k in range(M):
-    #    A_matrix[:,k] = A(np.eye(M)[:,k])
-    #eig_vals, eig_vecs = lg.eig(A_matrix)
-    #sigma_min_real = eig_vals[np.argmin(np.real(eig_vals))]
-    #q0_min_real = eig_vecs[:, np.argmin(np.real(eig_vals))]
-    #sigma_min_complex = eig_vals[2]
-    #q0_min_complex = eig_vecs[:,2]
-    #print('sigma', sigma_min_real, sigma_min_complex)
-
     # Do actual numerical continuation in both directions
     if initial_tangent[-1] < 0.0: # Decreasing eps
         print('Increasing eps first')
         sign = 1.0
     else:
         sign = -1.0
-    x1_path, eps1_path = numericalContinuation(x0, eps0,  sign * initial_tangent, 0.0, 0.0, M, max_steps, ds, ds_min, ds_max, tolerance)
-    x2_path, eps2_path = numericalContinuation(x0, eps0, -sign * initial_tangent, 0.0, 0.0, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x1_path, eps1_path = numericalContinuation(x0, eps0,  sign * initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
+    x2_path, eps2_path = numericalContinuation(x0, eps0, -sign * initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance)
 
     # Store the full path
     x1_path = np.array(x1_path)
@@ -163,6 +151,56 @@ def calculateBifurcationDiagram():
     plt.plot(eps2_path, plot_x2_path, color='red', label='Branch 2')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
+    plt.show()
+
+def calculateEigenvaluesArnoldi():
+    M = 2 * N
+
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    bf_data = np.load(directory + 'bf_diagram.npy')
+    x1_data = bf_data[:,0:M]
+    eps1_data = bf_data[:, M]
+    x2_data = bf_data[:, M+1 : 2*M+1]
+    eps2_data = bf_data[:, 2*M+1]
+
+    # Calculate the initial eigenvalue to high precision to start the process
+    x0 = x1_data[0,:]
+    eps0 = eps1_data[0]
+    A = slg.LinearOperator(shape=(M, M), matvec=lambda w: dGdx_v(x0, w, eps0))
+    A_matrix = np.zeros((M, M))
+    for k in range(M):
+        A_matrix[:,k] = A(np.eye(M)[:,k])
+    eig_vals, eig_vecs = lg.eig(A_matrix)
+
+    # Select the smallest real eigenvalue and do Arnoldi along x1_path
+    sigma = np.inf
+    q = np.zeros(M)
+    for index in range(len(eig_vals)):
+        if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
+            sigma = eig_vals[index]
+            q = eig_vecs[:,index]
+    eig1_path = continueEigenvalues(x1_path, eps1_path, sigma, q)
+
+    # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
+    sigma = np.inf
+    q = np.zeros(M)
+    for index in range(len(eig_vals)):
+        if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
+            sigma = eig_vals[index]
+            q = eig_vecs[:,index]
+    eig2_path = continueEigenvalues(x2_path, eps2_path, sigma, q)
+
+    # Plot the results
+    plt.plot(np.linspace(0, eps1_data[-1], len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
+    plt.xlabel('Continuation Step')
+    plt.ylabel('Eigenvalue')
+    plt.legend()
+    
+    plt.figure()
+    plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
+    plt.ylabel('Imaginary') 
+    plt.xlabel('Real')
+    plt.legend()
     plt.show()
 
 def plotBifurcationDiagram():

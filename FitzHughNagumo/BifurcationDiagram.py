@@ -41,6 +41,9 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
     else:
         return -tangent
 
+"""
+The Internal Numerical Continuation Routine.
+"""
 def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, ds_max, tolerance):
     x = np.copy(x0)
     eps = eps0
@@ -102,6 +105,10 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
 
     return x_path, eps_path#, eig_vals
 
+"""
+Routine that calculates the bifurcation diagram of a timestepper for the Fitzhugh-Nagumo PDE. Steady states of 
+the pde equal fixex points of the timespper, or zeros of psi(x) = (x - s_T(x)) / T, with s_T the timestepper.
+"""
 def calculateBifurcationDiagram():
     eps0 = 0.1
     x_array = np.linspace(0.0, L, N)
@@ -153,6 +160,11 @@ def calculateBifurcationDiagram():
     plt.ylabel(r'$<u>$')
     plt.show()
 
+"""
+Routine that calculates the approximate eigenvalues of the finite differences Jacobian using the Arnoldi method 
+along the continuation path. The Arnoldi method uses a shift equal to the previous eigenvalues + some
+engineering. These are the approxmimate eigenvalues of the timestepper, not of the right-hand side of the PDE.
+"""
 def calculateEigenvaluesArnoldi():
     M = 2 * N
 
@@ -206,6 +218,10 @@ def calculateEigenvaluesArnoldi():
     plt.legend()
     plt.show()
 
+"""
+Routine that calculates exactly the eigenvalues of the finite differences Jacobian along the continuation path.
+These are the eigenvalues of the timestepper, not of the right-hand side of the PDE
+"""
 def calculateEigenvaluesQR():
     M = 2 * N
 
@@ -242,7 +258,7 @@ def calculateEigenvaluesQR():
             A_matrix[:,k] = A(np.eye(M)[:,k])
         eig_vals = lg.eigvals(A_matrix)
         
-        # Select the minimal real eigenvalue
+        # Select the minimal eigenvalue with nonzero imaginary part
         sigma = np.inf
         for index in range(len(eig_vals)):
             if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
@@ -264,6 +280,7 @@ def calculateEigenvaluesQR():
     plt.xlabel('Real')
     plt.legend()
     plt.show()           
+
 
 if __name__ == '__main__':
     calculateBifurcationDiagram()

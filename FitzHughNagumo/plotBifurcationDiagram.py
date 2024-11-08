@@ -13,6 +13,7 @@ T = 1.0
 
 def plotBifurcationDiagram():
     M = 2 * N
+    
     # Load Continuation data, Arnoldi and QR data
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')

@@ -35,3 +35,21 @@ def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-3):
             print('Trying again with a different shift')
             log_shift += 1.0
             pass
+
+def continueArnoldi(G_x, x_path, eps_path, sigma, q, tolerance):
+    eigenvalues = [sigma]
+    eigenvectors = [q]
+
+    n_points = x_path.shape[0]
+    M = x_path.shape[1]
+    for i in range(1, n_points):
+        x = x_path[i,:]
+        eps = eps_path[i]
+
+        A = slg.LinearOperator(shape=(M, M), matvec=lambda w: G_x(x, w, eps))
+        sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
+
+        eigenvalues.append(sigma)
+        eigenvectors.append(q)
+
+    return eigenvalues, np.array(eigenvectors)

@@ -6,7 +6,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 from EulerTimestepper import psi, sigmoid
-from Arnoldi import shiftInvertArnoldiSimple
+from Arnoldi import shiftInvertArnoldiSimple, continueArnoldi
 
 N = 200
 L = 20.0
@@ -179,7 +179,7 @@ def calculateEigenvaluesArnoldi():
         if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig1_path = continueEigenvalues(x1_path, eps1_path, sigma, q)
+    eig1_path = continueArnoldi(dGdx_v, x1_data, eps1_data, sigma, q)
 
     # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
     sigma = np.inf
@@ -188,7 +188,7 @@ def calculateEigenvaluesArnoldi():
         if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig2_path = continueEigenvalues(x2_path, eps2_path, sigma, q)
+    eig2_path = continueArnoldi(dGdx_v, x2_data, eps2_data, sigma, q)
 
     # Plot the results
     plt.plot(np.linspace(0, eps1_data[-1], len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')

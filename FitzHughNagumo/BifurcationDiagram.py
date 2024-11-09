@@ -5,6 +5,8 @@ import scipy.sparse.linalg as slg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
+import argparse
+
 from EulerTimestepper import psi, sigmoid
 from Arnoldi import continueArnoldi, continueArnoldiScipy
 
@@ -167,6 +169,7 @@ engineering. These are the approxmimate eigenvalues of the timestepper, not of t
 """
 def calculateEigenvaluesArnoldi():
     M = 2 * N
+    tolerance = 1.e-6
 
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
@@ -191,7 +194,7 @@ def calculateEigenvaluesArnoldi():
         if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig1_path = continueArnoldi(dGdx_v, x1_data, eps1_data, np.real(sigma), q)
+    eig1_path, _ = continueArnoldi(dGdx_v, x1_data, eps1_data, np.real(sigma), q, tolerance)
 
     # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
     sigma = np.inf
@@ -200,7 +203,7 @@ def calculateEigenvaluesArnoldi():
         if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig2_path = continueArnoldi(dGdx_v, x2_data, eps2_data, sigma, q)
+    eig2_path, _ = continueArnoldi(dGdx_v, x2_data, eps2_data, sigma, q, tolerance)
 
     # Store both arrays
     np.save(directory + 'Arnoldi_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
@@ -209,12 +212,14 @@ def calculateEigenvaluesArnoldi():
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
+    plt.title('Arnoldi')
     plt.legend()
     
     plt.figure()
     plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')
+    plt.title('Arnoldi')
     plt.legend()
     plt.show()
 
@@ -225,6 +230,7 @@ engineering. These are the approxmimate eigenvalues of the timestepper, not of t
 """
 def calculateEigenvaluesArnoldiScipy():
     M = 2 * N
+    tolerance = 1.e-6
 
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
@@ -249,7 +255,7 @@ def calculateEigenvaluesArnoldiScipy():
         if np.abs(np.imag(eig_vals[index])) < 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig1_path = continueArnoldiScipy(dGdx_v, x1_data, eps1_data, np.real(sigma), q)
+    eig1_path, _ = continueArnoldiScipy(dGdx_v, x1_data, eps1_data, np.real(sigma), q, tolerance)
 
     # Select the smallest non-real eigenvalue and do Arnoldi along x2_path
     sigma = np.inf
@@ -258,7 +264,7 @@ def calculateEigenvaluesArnoldiScipy():
         if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
             sigma = eig_vals[index]
             q = eig_vecs[:,index]
-    eig2_path = continueArnoldiScipy(dGdx_v, x2_data, eps2_data, sigma, q)
+    eig2_path, _ = continueArnoldiScipy(dGdx_v, x2_data, eps2_data, sigma, q, tolerance)
 
     # Store both arrays
     np.save(directory + 'Arnoldi_Scipy_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
@@ -267,12 +273,14 @@ def calculateEigenvaluesArnoldiScipy():
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
+    plt.title('Scipy Arnoldi')
     plt.legend()
     
     plt.figure()
     plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')
+    plt.title('Scipy Arnoldi')
     plt.legend()
     plt.show()
 
@@ -293,6 +301,7 @@ def calculateEigenvaluesQR():
     # Calculate the minimal real eigenvalue along the first branch
     eig1_path = []
     for i in range(len(eps1_data)):
+        print('i =', i)
         A = lambda w: dGdx_v(x1_data[i,:], w, eps1_data[i])
         A_matrix = np.zeros((M, M))
         for k in range(M):
@@ -310,6 +319,7 @@ def calculateEigenvaluesQR():
     # Calculate the minimal real eigenvalue with imaginary part along the second branch
     eig2_path = []
     for i in range(len(eps2_data)):
+        print('i =', i)
         A = lambda w: dGdx_v(x2_data[i,:], w, eps2_data[i])
         A_matrix = np.zeros((M, M))
         for k in range(M):
@@ -331,14 +341,30 @@ def calculateEigenvaluesQR():
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
+    plt.title('QR Eigenvalues Branch 1')
     plt.legend()
     plt.figure()
     plt.scatter(np.real(eig2_path), np.imag(eig2_path), color='red', label='Branch 2')
     plt.ylabel('Imaginary') 
     plt.xlabel('Real')
+    plt.title('QR Eigenvalues Branch 2')
     plt.legend()
     plt.show()           
 
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment', dest='experiment', nargs='?')
+
+    return parser.parse_args()
 
 if __name__ == '__main__':
-    calculateBifurcationDiagram()
+    args = parseArguments()
+
+    if args.experiment == 'ArnoldiScipy':
+        calculateEigenvaluesArnoldiScipy()
+    elif args.experiment == 'Arnoldi':
+        calculateEigenvaluesArnoldi()
+    elif args.experiment == 'QR':
+        calculateEigenvaluesQR()
+    elif args.experiment == 'bifurcation':
+        calculateBifurcationDiagram()

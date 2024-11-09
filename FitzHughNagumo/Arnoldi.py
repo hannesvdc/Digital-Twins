@@ -36,9 +36,15 @@ def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-3):
             log_shift += 1.0
             pass
 
+# Shift sigma with -0.01 to ensure we find an eigenvalue to the left of sigma
+# because we are looking for Hopf eigenvalues that cross the imaginary axis from
+# the right to the left. This corresponds to the Largest Magnitude shifted eigenvale
+# 1 / (lambda - shift + 0.01).
 def shiftInvertArnoldiScipy(A, sigma, v0, tolerance):
-    A_complex = lambda w : A(w).astype(dtype=np.complex128)
-    eig_vals, eig_vecs = slg.eigs(A_complex, k=1, sigma=sigma, v0=v0, which='LM', return_eigenvectors=True, tol=tolerance)
+    M = v0.size
+    _A_complex = lambda w : A(w).astype(dtype=np.complex128)
+    A_complex = slg.LinearOperator(shape=(M,M), matvec=_A_complex)
+    eig_vals, eig_vecs = slg.eigs(A_complex, k=1, sigma=sigma - 0.01, v0=v0, which='LM', return_eigenvectors=True, tol=tolerance)
 
     return eig_vals[0], eig_vecs[:,0]
 
@@ -49,6 +55,7 @@ def continueArnoldi(G_x, x_path, eps_path, sigma, q, tolerance):
     n_points = x_path.shape[0]
     M = x_path.shape[1]
     for i in range(1, n_points):
+        print('i =', i)
         x = x_path[i,:]
         eps = eps_path[i]
 
@@ -67,6 +74,7 @@ def continueArnoldiScipy(G_x, x_path, eps_path, sigma, q, tolerance):
     n_points = x_path.shape[0]
     M = x_path.shape[1]
     for i in range(1, n_points):
+        print('i =', i)
         x = x_path[i,:]
         eps = eps_path[i]
 

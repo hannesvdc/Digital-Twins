@@ -206,7 +206,7 @@ def calculateEigenvaluesArnoldi():
     eig2_path, _ = continueArnoldi(dGdx_v, x2_data, eps2_data, sigma, q, tolerance)
 
     # Store both arrays
-    np.save(directory + 'Arnoldi_Eigenvalues.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
+    np.save(directory + 'Arnoldi_Eigenvalues_Hopf.npy', np.vstack((eig1_path, eig2_path), dtype=np.complex128))
 
     # Plot the results
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')

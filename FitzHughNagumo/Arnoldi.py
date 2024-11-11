@@ -9,15 +9,15 @@ warnings.filterwarnings("error")
 def rayleigh(A, q):
     return np.vdot(q, A(q)) / np.vdot(q, q)
 
-# Shift sigma with -0.01 to ensure we find an eigenvalue to the left of sigma
+# Shift sigma with -0.1 to ensure we find an eigenvalue to the left of sigma
 # because we are looking for Hopf eigenvalues that cross the imaginary axis from
 # the right to the left. This corresponds to the Largest Magnitude shifted eigenvale
-# 1 / (lambda - shift + 0.01).
+# 1 / (lambda - shift + 0.1).
 def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-5):
     M = v0.size
 
     for log_shift in range(10):
-        shift = sigma - (log_shift + 1.0) * 0.01
+        shift = sigma - (log_shift + 1.0) * 0.1
         B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - shift * w)
         q = np.copy(v0)
 
@@ -41,10 +41,10 @@ def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-5):
             log_shift += 1.0
             pass
 
-# Shift sigma with -0.01 to ensure we find an eigenvalue to the left of sigma
+# Shift sigma with -0.1 to ensure we find an eigenvalue to the left of sigma
 # because we are looking for Hopf eigenvalues that cross the imaginary axis from
 # the right to the left. This corresponds to the Largest Magnitude shifted eigenvale
-# 1 / (lambda - shift + 0.01).
+# 1 / (lambda - shift + 0.1).
 def shiftInvertArnoldiScipy(A, sigma, v0, tolerance):
     M = v0.size
     _A_complex = lambda w : A(w).astype(dtype=np.complex128)

@@ -169,7 +169,7 @@ engineering. These are the approxmimate eigenvalues of the timestepper, not of t
 """
 def calculateEigenvaluesArnoldi():
     M = 2 * N
-    tolerance = 1.e-6
+    tolerance = 1.e-8
 
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
@@ -210,6 +210,8 @@ def calculateEigenvaluesArnoldi():
 
     # Plot the results
     plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig1_path), color='blue', label='Branch 1')
+    plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.real(eig2_path), color='red', label='Branch 2 Real Part')
+    plt.plot(np.linspace(0, len(eps1_data)-1, len(eps1_data)), np.imag(eig2_path), color='purple', label='Branch 2 Imag Part')
     plt.xlabel('Continuation Step')
     plt.ylabel('Eigenvalue')
     plt.title('Arnoldi')
@@ -329,7 +331,7 @@ def calculateEigenvaluesQR():
         # Select the minimal eigenvalue with nonzero imaginary part
         sigma = np.inf
         for index in range(len(eig_vals)):
-            if np.abs(np.imag(eig_vals[index])) > 1.e-8 and np.real(eig_vals[index]) < sigma:
+            if np.abs(np.imag(eig_vals[index])) > 0.0 and np.real(eig_vals[index]) < sigma:
                 sigma = eig_vals[index]
         eig2_path.append(sigma)
     eig2_path = np.array(eig2_path, dtype=np.complex128)

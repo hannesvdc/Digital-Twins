@@ -5,14 +5,19 @@ import scipy.sparse.linalg as slg
 import warnings
 warnings.filterwarnings("error")
 
+# Calculate the Rayleigh Coefficient of a vector
 def rayleigh(A, q):
     return np.vdot(q, A(q)) / np.vdot(q, q)
 
-def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-3):
+# Shift sigma with -0.01 to ensure we find an eigenvalue to the left of sigma
+# because we are looking for Hopf eigenvalues that cross the imaginary axis from
+# the right to the left. This corresponds to the Largest Magnitude shifted eigenvale
+# 1 / (lambda - shift + 0.01).
+def shiftInvertArnoldiSimple(A, sigma, v0, tolerance, report_tolerance=1.e-5):
     M = v0.size
 
     for log_shift in range(10):
-        shift = sigma - (log_shift + 1.0) * 0.1
+        shift = sigma - (log_shift + 1.0) * 0.01
         B = slg.LinearOperator(shape=(M, M), matvec=lambda w: A(w) - shift * w)
         q = np.copy(v0)
 
@@ -44,7 +49,7 @@ def shiftInvertArnoldiScipy(A, sigma, v0, tolerance):
     M = v0.size
     _A_complex = lambda w : A(w).astype(dtype=np.complex128)
     A_complex = slg.LinearOperator(shape=(M,M), matvec=_A_complex)
-    eig_vals, eig_vecs = slg.eigs(A_complex, k=1, sigma=sigma - 0.01, v0=v0, which='LM', return_eigenvectors=True, tol=tolerance)
+    eig_vals, eig_vecs = slg.eigs(A_complex, k=1, sigma=sigma - 0.1, v0=v0, which='LM', return_eigenvectors=True, tol=tolerance)
 
     return eig_vals[0], eig_vecs[:,0]
 

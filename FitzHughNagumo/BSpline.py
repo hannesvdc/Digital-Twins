@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as lg
 
 class ClampedCubicSpline:
-    def __init__(self, x, f):
+    def __init__(self, x, f, x_left=0.0, x_right=1.0):
         super(ClampedCubicSpline).__init__(self)
 
         self.x = x
@@ -34,9 +34,11 @@ class ClampedCubicSpline:
 
         # Clamped boundary conditions
         A[-2, self.n] = 1.0
+        A[-2, 2*self.n] = 2.0 * (x_left - self.x[0])
+        A[-2, 3*self.n] = 3.0 * (x_left - self.x[0])**2
         A[-1, 2*self.n-1] = 1.0
-        A[-1, 3*self.n-1] = 2.0 * (self.x[-1] - self.x[-2])
-        A[-1, 4*self.n-1] = 3.0 * (self.x[-1] - self.x[-2])**2
+        A[-1, 3*self.n-1] = 2.0 * (x_right - self.x[-1])
+        A[-1, 4*self.n-1] = 3.0 * (x_right - self.x[-1])**2
 
         # Right-hand side
         b = np.zeros(4 * self.n)
@@ -53,7 +55,6 @@ class ClampedCubicSpline:
         self.c = y[2*self.n:3*self.n]
         self.d = y[3*self.n:]
 
-            
     def __call__(self, x):
         return self.evaluate(x)
     

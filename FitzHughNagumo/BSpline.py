@@ -59,9 +59,11 @@ class ClampedCubicSpline:
     
     def evaluate(self, x):
         index = np.searchsorted(self.x, x, side='right') - 1
+        index = min(index, len(self.a)-1)
         return self.a[index] + self.b[index] * (x - self.x[index]) + self.c[index] * (x - self.x[index])**2 + self.d[index] * (x - self.x[index])**3
     
     def derivative(self, x):
         index = np.searchsorted(self.x, x, side='right') - 1
+        index = min(index, len(self.a)-1)
         return self.b[index] + 2.0 * self.c[index] * (x - self.x[index]) + 3.0 * self.d[index] * (x - self.x[index])**2
 

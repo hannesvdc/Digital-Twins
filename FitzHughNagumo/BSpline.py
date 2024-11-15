@@ -37,8 +37,8 @@ class ClampedCubicSpline:
         A[-2, 2*self.n] = 2.0 * (x_left - self.x[0])
         A[-2, 3*self.n] = 3.0 * (x_left - self.x[0])**2
         A[-1, 2*self.n-1] = 1.0
-        A[-1, 3*self.n-1] = 2.0 * (x_right - self.x[-1])
-        A[-1, 4*self.n-1] = 3.0 * (x_right - self.x[-1])**2
+        A[-1, 3*self.n-1] = 2.0 * (x_right - self.x[self.n])
+        A[-1, 4*self.n-1] = 3.0 * (x_right - self.x[self.n])**2
 
         # Right-hand side
         b = np.zeros(4 * self.n)
@@ -64,5 +64,5 @@ class ClampedCubicSpline:
     
     def derivative(self, x):
         index = np.searchsorted(self.x, x, side='left')
-        return self.b[index] + 2.0 * self.c[index] * (x - self.x[index]) + 3.0 * self.d[index] * (x - self.x[index])
+        return self.b[index] + 2.0 * self.c[index] * (x - self.x[index]) + 3.0 * self.d[index] * (x - self.x[index])**2
 

@@ -33,9 +33,11 @@ def fhn_euler(u, v, dx, dt, params):
 
     return u_new, v_new
 
-def fhn_euler_timestepper(u, v, dx, dt, T, params):
+def fhn_euler_timestepper(u, v, dx, dt, T, params, verbose=False):
     N_steps = int(T / dt)
-    for _ in range(N_steps):
+    for k in range(N_steps):
+        if verbose:
+            print('t =', k * dt)
         u, v = fhn_euler(u, v, dx, dt, params)
     return u, v
 

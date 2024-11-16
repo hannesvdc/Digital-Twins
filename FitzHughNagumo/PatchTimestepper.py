@@ -4,6 +4,7 @@ import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 import BSpline
+from EulerTimestepper import fhn_euler_timestepper
 
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
@@ -74,7 +75,7 @@ def patchTimestepper():
     L = 20.0
     n_teeth = 11
     n_gaps = n_teeth - 1
-    gap_over_tooth_size_ratio = 9
+    gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
     n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
     N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
@@ -92,6 +93,7 @@ def patchTimestepper():
 
     # Initial condition - divide over all teeth
     x_array = np.linspace(0.0, L, N)
+    x_plot_array = []
     u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
     u_sol = []
@@ -99,26 +101,33 @@ def patchTimestepper():
     for i in range(n_teeth):
         u_sol.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_sol.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
     u0_sol = u_sol.copy()
     v0_sol = v_sol.copy()
 
     # Gap-Tooth Timestepping 
     T = 100.0
-    dt = 1.e-5
+    dt = 1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
-        print('t =', k*T_patch)
+        if k % 1000 == 0:
+            print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch, params)
 
+    # Euler Timestepping for Comparison
+    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=True)
+
     # Plot the solution at final time
-    x_plot_array = np.array([])
     for i in range(n_teeth):
-        x_plot_array = np.concatenate((x_plot_array, x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth]))
-    plt.plot(x_plot_array, np.concatenate(u_sol), label='u(x, t=450)')
-    plt.plot(x_plot_array, np.concatenate(v_sol), label='v(x, t=450)')
-    plt.plot(x_plot_array, np.concatenate(u0_sol), label='u(x, t=0)')
-    plt.plot(x_plot_array, np.concatenate(v0_sol), label='v(x, t=0)')
+        if i == 0:
+            plt.plot(x_plot_array[i], u_sol[i], label='u(x, t=1)', color='blue')
+            plt.plot(x_plot_array[i], v_sol[i], label='v(x, t=1)', color='orange')
+        else:
+            plt.plot(x_plot_array[i], u_sol[i], color='blue')
+            plt.plot(x_plot_array[i], v_sol[i], color='orange')
+    plt.plot(x_array, u_euler, label='Reference u(x, t=1)', linestyle='dashed', color='green')
+    plt.plot(x_array, v_euler, label='Reference v(x, t=1)', linestyle='dashed', color='red')
     plt.legend()
     plt.show()
 

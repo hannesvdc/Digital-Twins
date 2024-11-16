@@ -42,19 +42,13 @@ def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
         u, v = fhn_euler_patch(u, v, dx, dt, a, b, params)
     return u, v
 
-def patchOneTimestep(u0, v0, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch, params):
-    #n_teeth = len(u0)
-    #n_gaps = n_teeth - 1
-    #dx_gap = (1.0 - n_teeth * dx_tooth) / (n_teeth - 1)
-    #n_points_per_tooth = len(u0[0])
-    #n_points_per_gap = int(dx_gap / dx_tooth) * n_points_per_tooth
-
+def patchOneTimestep(u0, v0, L, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch, params):
     # Build the interpolating spline
     teeth_mid_points = 0.5 * dx_tooth + np.linspace(0.0, n_gaps, n_teeth) * (dx_gap + dx_tooth)
     teeth_u_avg_values = np.array([np.average(u0[i]) for i in range(n_teeth)])
     teeth_v_avg_values = np.array([np.average(v0[i]) for i in range(n_teeth)])
-    u_spline = BSpline.ClampedCubicSpline(teeth_mid_points, teeth_u_avg_values)
-    v_spline = BSpline.ClampedCubicSpline(teeth_mid_points, teeth_v_avg_values)
+    u_spline = BSpline.ClampedCubicSpline(teeth_mid_points, teeth_u_avg_values, left_bc=0.0, right_bc=L)
+    v_spline = BSpline.ClampedCubicSpline(teeth_mid_points, teeth_v_avg_values, left_bc=0.0, right_bc=L)
 
     # For each patch: calculate Neumann boundary conditions and simulate
     return_u = []
@@ -64,6 +58,7 @@ def patchOneTimestep(u0, v0, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch,
         right_x = teeth_mid_points[patch] + 0.5 * dx_tooth
         a = [u_spline.derivative(left_x), v_spline.derivative(left_x)]
         b = [u_spline.derivative(right_x), v_spline.derivative(right_x)]
+
         u_new, v_new = eulerNeumannPathTimestepper(u0[patch], v0[patch], dx, dt, T_patch, a, b, params)
         return_u.append(u_new)
         return_v.append(v_new)
@@ -102,8 +97,6 @@ def patchTimestepper():
         u_sol.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_sol.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    u0_sol = u_sol.copy()
-    v0_sol = v_sol.copy()
 
     # Gap-Tooth Timestepping 
     T = 100.0
@@ -113,10 +106,10 @@ def patchTimestepper():
     for k in range(n_patch_steps):
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
-        u_sol, v_sol = patchOneTimestep(u_sol, v_sol, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch, params)
+        u_sol, v_sol = patchOneTimestep(u_sol, v_sol, L, n_teeth, n_gaps, dx_gap, dx_tooth, dx, dt, T_patch, params)
 
     # Euler Timestepping for Comparison
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=True)
+    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
 
     # Plot the solution at final time
     for i in range(n_teeth):

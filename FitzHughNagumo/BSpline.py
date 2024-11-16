@@ -2,7 +2,7 @@ import numpy as np
 import numpy.linalg as lg
 
 class ClampedCubicSpline:
-    def __init__(self, x, f, x_left=0.0, x_right=1.0):
+    def __init__(self, x, f, left_bc=0.0, right_bc=1.0):
         self.x = np.copy(x)
         self.f = np.copy(f)
         self.n = len(self.x) - 1
@@ -33,11 +33,11 @@ class ClampedCubicSpline:
 
         # Clamped boundary conditions
         A[-2, self.n] = 1.0
-        A[-2, 2*self.n] = 2.0 * (x_left - self.x[0])
-        A[-2, 3*self.n] = 3.0 * (x_left - self.x[0])**2
+        A[-2, 2*self.n] = 2.0 * (left_bc - self.x[0])
+        A[-2, 3*self.n] = 3.0 * (left_bc - self.x[0])**2
         A[-1, 2*self.n-1] = 1.0
-        A[-1, 3*self.n-1] = 2.0 * (x_right - self.x[self.n-1])
-        A[-1, 4*self.n-1] = 3.0 * (x_right - self.x[self.n-1])**2
+        A[-1, 3*self.n-1] = 2.0 * (right_bc - self.x[self.n-1])
+        A[-1, 4*self.n-1] = 3.0 * (right_bc - self.x[self.n-1])**2
 
         # Right-hand side
         b = np.zeros(4 * self.n)
@@ -59,11 +59,19 @@ class ClampedCubicSpline:
     
     def evaluate(self, x):
         index = np.searchsorted(self.x, x, side='right') - 1
-        index = min(index, len(self.a)-1)
+        if index < 0:
+            index = 0
+        if index > len(self.a) - 1:
+            index = len(self.a) - 1
+
         return self.a[index] + self.b[index] * (x - self.x[index]) + self.c[index] * (x - self.x[index])**2 + self.d[index] * (x - self.x[index])**3
     
     def derivative(self, x):
         index = np.searchsorted(self.x, x, side='right') - 1
-        index = min(index, len(self.a)-1)
-        return self.b[index] + 2.0 * self.c[index] * (x - self.x[index]) + 3.0 * self.d[index] * (x - self.x[index])**2
+        if index < 0:
+            index = 0
+        if index > len(self.a)-1:
+            index = len(self.a)-1
+        
+        return self.b[index]  + 2.0 * self.c[index] * (x - self.x[index]) + 3.0 * self.d[index] * (x - self.x[index])**2
 

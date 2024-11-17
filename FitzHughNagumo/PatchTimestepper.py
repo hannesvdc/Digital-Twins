@@ -87,8 +87,6 @@ def patchTimestepper():
     n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
     N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
     dx = L / (N - 1)
-    dx_tooth = L / (n_teeth + gap_over_tooth_size_ratio * n_gaps)
-    dx_gap = dx_tooth * gap_over_tooth_size_ratio
 
     # Model parameters
     a0 = -0.03
@@ -111,7 +109,7 @@ def patchTimestepper():
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 100.0
+    T = 10.0
     dt = 1.e-4
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)

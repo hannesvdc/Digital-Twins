@@ -67,7 +67,7 @@ def plotFitzHughNagumoSolution():
     v = np.copy(v0)
 
     # Timestepping
-    dt = 0.001
+    dt = 1.e-3
     report_dt = 10*dt
     T = 450.0
     u_solution = np.zeros((int(T / report_dt)+1, u.size))

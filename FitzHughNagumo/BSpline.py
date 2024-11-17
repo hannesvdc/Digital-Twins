@@ -58,13 +58,17 @@ class ClampedCubicSpline:
         return self.evaluate(x)
     
     def evaluate(self, x):
-        index = np.searchsorted(self.x, x, side='right') - 1
-        if index < 0:
-            index = 0
-        if index > len(self.a) - 1:
-            index = len(self.a) - 1
+        val_array = np.zeros_like(x)
+        for i in range(len(x)):
+            index = np.searchsorted(self.x, x[i], side='right') - 1
+            if index < 0:
+                index = 0
+            if index > len(self.a) - 1:
+                index = len(self.a) - 1
 
-        return self.a[index] + self.b[index] * (x - self.x[index]) + self.c[index] * (x - self.x[index])**2 + self.d[index] * (x - self.x[index])**3
+            val_array[i] = self.a[index] + self.b[index] * (x[i] - self.x[index]) + self.c[index] * (x[i] - self.x[index])**2 + self.d[index] * (x[i] - self.x[index])**3
+
+        return val_array
     
     def derivative(self, x):
         index = np.searchsorted(self.x, x, side='right') - 1

@@ -103,13 +103,18 @@ def patchTimestepper():
     u0, v0 = fixInitialBCs(u0, v0)
     u_sol = []
     v_sol = []
+    u_time_solution = []
+    v_time_solution = []
+    t_plot_array = [0.0]
     for i in range(n_teeth):
         u_sol.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_sol.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        u_time_solution.append(np.copy(u_sol[i])[np.newaxis, :])
+        v_time_solution.append(np.copy(v_sol[i])[np.newaxis, :])
 
     # Gap-Tooth Timestepping 
-    T = 10.0
+    T = 450.0
     dt = 1.e-4
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
@@ -117,6 +122,10 @@ def patchTimestepper():
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params)
+        for i in range(n_teeth):
+            u_time_solution[i] = np.vstack([u_time_solution[i], np.copy(u_sol[i])])
+            v_time_solution[i] = np.vstack([v_time_solution[i], np.copy(v_sol[i])])
+        t_plot_array.append((k+1) * T_patch)
 
     # Euler Timestepping for Comparison
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
@@ -132,6 +141,31 @@ def patchTimestepper():
     plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
     plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
+
+    # Plot the full (x, t) evolution diagram for u and v
+    t_plot_array = np.array(t_plot_array)
+    u_min = min([np.min(u_time_solution[i]) for i in range(n_teeth)])
+    u_max = min([np.max(u_time_solution[i]) for i in range(n_teeth)])
+    v_min = min([np.min(v_time_solution[i]) for i in range(n_teeth)])
+    v_max = min([np.max(v_time_solution[i]) for i in range(n_teeth)])
+
+    plt.figure()
+    for i in range(n_teeth):
+        X, T = np.meshgrid(x_plot_array[i], t_plot_array)
+        plt.pcolor(X, T, u_time_solution[i], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$t$')
+    plt.title(r'$u(x, t)$')
+
+    plt.figure()
+    t_plot_array = np.array(t_plot_array)
+    for i in range(n_teeth):
+        X, T = np.meshgrid(x_plot_array[i], t_plot_array)
+        plt.pcolor(X, T, v_time_solution[i], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$t$')
+    plt.title(r'$v(x, t)$')
+
     plt.show()
 
 if __name__ == '__main__':

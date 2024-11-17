@@ -124,13 +124,13 @@ def patchTimestepper():
     # Plot the solution at final time
     for i in range(n_teeth):
         if i == 0:
-            plt.plot(x_plot_array[i], u_sol[i], label='u(x, t=1)', color='blue')
-            plt.plot(x_plot_array[i], v_sol[i], label='v(x, t=1)', color='orange')
+            plt.plot(x_plot_array[i], u_sol[i], label=r'$u(x, t=$' + str(T) + r'$)$', color='blue')
+            plt.plot(x_plot_array[i], v_sol[i], label=r'$v(x, t=$' + str(T) + r'$)$', color='orange')
         else:
             plt.plot(x_plot_array[i], u_sol[i], color='blue')
             plt.plot(x_plot_array[i], v_sol[i], color='orange')
-    plt.plot(x_array, u_euler, label='Reference u(x, t=1)', linestyle='dashed', color='green')
-    plt.plot(x_array, v_euler, label='Reference v(x, t=1)', linestyle='dashed', color='red')
+    plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
+    plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
     plt.show()
 

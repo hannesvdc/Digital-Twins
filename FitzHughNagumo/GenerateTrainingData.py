@@ -88,4 +88,3 @@ def evolveTrajectories():
 
 if __name__ == '__main__':
     evolveTrajectories()
-    generateRandomInitials(plot=True)

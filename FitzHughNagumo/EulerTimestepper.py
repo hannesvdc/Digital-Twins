@@ -114,7 +114,7 @@ def findSteadyState():
     L = 20.0
     N = 200
     dx = L / N
-    dt = 0.001
+    dt = 1.e-3
     T = 1.0
 
     # Model parameters

@@ -65,6 +65,9 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
     u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L)
     v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L)
 
+    # Plot the spline and patch solutions for debugging purposes
+    
+
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []
     return_v = []
@@ -142,7 +145,7 @@ def patchTimestepper():
 
     # Gap-Tooth Timestepping 
     T = 1.0
-    dt = 1.e-3
+    dt = 1.e-4
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
@@ -191,16 +194,21 @@ def findSteadyStateNewtonGMRES():
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
     
     # Gap-Tooth Psi Function 
-    T_psi = 1.0
+    T_psi = 0.1 #1.0
     dt = 1.e-3
     T_patch = 10 * dt
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+
+    # Do Euler timestepping and calculate psi(euler steady - state)
+    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
+    z_euler = np.concatenate((u_euler, v_euler))
+    print('Psi Euler', lg.norm(psi(z_euler)))
 
     # Do Newton - GMRES to find psi = 0 
     tolerance = 1.e-6
     cb = lambda x, f: print(lg.norm(f))
     z0 = np.concatenate((u0, v0))
-    z_ss = opt.newton_krylov(psi, z0, f_tol=tolerance, method='gmres', verbose=True, callback=cb)
+    z_ss = opt.newton_krylov(psi, z0, f_tol=tolerance, method='lgmres', verbose=True, callback=cb)
 
     # Plot the steady-state
     u_ss = z_ss[0:N]
@@ -213,4 +221,4 @@ def findSteadyStateNewtonGMRES():
     plt.show()
 
 if __name__ == '__main__':
-    findSteadyStateNewtonGMRES()
+    patchTimestepper()

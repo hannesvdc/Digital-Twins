@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.linalg as lg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
@@ -70,7 +71,6 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
     for patch in range(n_teeth):
         left_x = max(0.0, x_array[patch][0] - 0.5*dx)
         right_x = min(L, x_array[patch][-1] + 0.5*dx)
-        print(left_x, right_x, dx)
         a = [u_spline.derivative(left_x), v_spline.derivative(left_x)]
         b = [u_spline.derivative(right_x), v_spline.derivative(right_x)]
 
@@ -198,8 +198,9 @@ def findSteadyStateNewtonGMRES():
 
     # Do Newton - GMRES to find psi = 0 
     tolerance = 1.e-6
+    cb = lambda x, f: print(lg.norm(f))
     z0 = np.concatenate((u0, v0))
-    z_ss = opt.newton_krylov(psi, z0, rdiff=1.e-8, method='lgmres', f_tol=tolerance, verbose=True)
+    z_ss = opt.newton_krylov(psi, z0, f_tol=tolerance, method='gmres', verbose=True, callback=cb)
 
     # Plot the steady-state
     u_ss = z_ss[0:N]
@@ -212,4 +213,4 @@ def findSteadyStateNewtonGMRES():
     plt.show()
 
 if __name__ == '__main__':
-    patchTimestepper()
+    findSteadyStateNewtonGMRES()

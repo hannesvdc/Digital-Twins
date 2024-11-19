@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 import BSpline
@@ -67,8 +68,9 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
     return_u = []
     return_v = []
     for patch in range(n_teeth):
-        left_x = x_array[patch][0]
-        right_x = x_array[patch][-1]
+        left_x = max(0.0, x_array[patch][0] - 0.5*dx)
+        right_x = min(L, x_array[patch][-1] + 0.5*dx)
+        print(left_x, right_x, dx)
         a = [u_spline.derivative(left_x), v_spline.derivative(left_x)]
         b = [u_spline.derivative(right_x), v_spline.derivative(right_x)]
 
@@ -77,6 +79,33 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
         return_v.append(v_new)
 
     return return_u, return_v
+
+def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
+    len_uv = len(z0) // 2
+    n_points_per_tooth = len_uv // n_teeth
+    assert n_points_per_tooth * n_teeth == len_uv
+
+    # Convert the numpy array to the patches datastructure
+    u0 = z0[0:len_uv]
+    v0 = z0[len_uv:]
+    u_patches = []
+    v_patches = []
+    for i in range(n_teeth):
+        u_patches.append(u0[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+        v_patches.append(v0[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+
+    # Do time-evolution over an interval of size T.
+    n_steps = int(T / T_patch)
+    for _ in range(n_steps):
+        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params)
+
+    # Convert patches datastructure back to a single numpy array
+    u_new = np.concatenate(u_patches)
+    v_new = np.concatenate(v_patches)
+    z_new = np.concatenate((u_new, v_new))
+
+    # Return the psi - function
+    return (z0 - z_new) / T
 
 def patchTimestepper():
     # Domain parameters
@@ -112,7 +141,7 @@ def patchTimestepper():
         #v_time_solution.append(np.copy(v_sol[i])[np.newaxis, :])
 
     # Gap-Tooth Timestepping 
-    T = 10.0
+    T = 1.0
     dt = 1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
@@ -134,6 +163,51 @@ def patchTimestepper():
             plt.plot(x_plot_array[i], v_sol[i], color='orange')
     plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
     plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
+    plt.legend()
+    plt.show()
+
+def findSteadyStateNewtonGMRES():
+    # Domain parameters
+    L = 20.0
+    n_teeth = 21
+    n_points_per_tooth = 10
+    N = n_teeth * n_points_per_tooth
+    dx = L / (N - 1)
+
+    # Model parameters
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
+
+    # Initial condition - divide over all teeth
+    x_array = np.linspace(0.0, L, N)
+    x_plot_array = []
+    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    u0, v0 = fixInitialBCs(u0, v0)
+    for i in range(n_teeth):
+        x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+    
+    # Gap-Tooth Psi Function 
+    T_psi = 1.0
+    dt = 1.e-3
+    T_patch = 10 * dt
+    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+
+    # Do Newton - GMRES to find psi = 0 
+    tolerance = 1.e-6
+    z0 = np.concatenate((u0, v0))
+    z_ss = opt.newton_krylov(psi, z0, rdiff=1.e-8, method='lgmres', f_tol=tolerance, verbose=True)
+
+    # Plot the steady-state
+    u_ss = z_ss[0:N]
+    v_ss = z_ss[N:]
+    plt.plot(x_array, u_ss, label=r'Steady - State $u(x)$')
+    plt.plot(x_array, v_ss, label=r'Steady - State $v(x)$')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$u, v$', rotation=0)
     plt.legend()
     plt.show()
 

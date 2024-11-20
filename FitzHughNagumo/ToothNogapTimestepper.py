@@ -208,7 +208,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
     try:
-        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', verbose=True, callback=cb, maxiter=200)
+        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', callback=cb, maxiter=200)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]

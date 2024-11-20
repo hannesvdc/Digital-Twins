@@ -1,5 +1,9 @@
 import numpy as np
+import numpy.linalg as lg
+import scipy.optimize as opt
 import matplotlib.pyplot as plt
+
+import argparse
 
 import BSpline
 from EulerTimestepper import fhn_euler_timestepper
@@ -101,32 +105,39 @@ def patchTimestepper():
     u0, v0 = fixInitialBCs(u0, v0)
     u_sol = []
     v_sol = []
-    u_time_solution = []
-    v_time_solution = []
-    t_plot_array = [0.0]
     for i in range(n_teeth):
         u_sol.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_sol.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        u_time_solution.append(np.copy(u_sol[i])[np.newaxis, :])
-        v_time_solution.append(np.copy(v_sol[i])[np.newaxis, :])
 
     # Gap-Tooth Timestepping 
-    T = 450.0
-    dt = 1.e-4
+    T = 100.0
+    dt = 1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params)
-        for i in range(n_teeth):
-            u_time_solution[i] = np.vstack([u_time_solution[i], np.copy(u_sol[i])])
-            v_time_solution[i] = np.vstack([v_time_solution[i], np.copy(v_sol[i])])
-        t_plot_array.append((k+1) * T_patch)
+
+    # Calculate the psi - value of the GapTooth scheme
+    T_psi = 1.0
+    z_sol = np.concatenate((np.concatenate(u_sol), np.concatenate(v_sol)))
+    psi_val = psiPatchNogap(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    print('Psi Gap-Tooth', lg.norm(psi_val))
 
     # Euler Timestepping for Comparison
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+
+    # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
+    u_patch_euler = []
+    v_patch_euler = []
+    for i in range(n_teeth):
+        u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    z_patch_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
+    psi_val_euler = psiPatchNogap(z_patch_euler, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    print('Psi Euler', lg.norm(psi_val_euler))
 
     # Plot the solution at final time
     for i in range(n_teeth):
@@ -139,32 +150,134 @@ def patchTimestepper():
     plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
     plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
-
-    # Plot the full (x, t) evolution diagram for u and v
-    t_plot_array = np.array(t_plot_array)
-    u_min = min([np.min(u_time_solution[i]) for i in range(n_teeth)])
-    u_max = min([np.max(u_time_solution[i]) for i in range(n_teeth)])
-    v_min = min([np.min(v_time_solution[i]) for i in range(n_teeth)])
-    v_max = min([np.max(v_time_solution[i]) for i in range(n_teeth)])
-
-    plt.figure()
-    for i in range(n_teeth):
-        X, T = np.meshgrid(x_plot_array[i], t_plot_array)
-        plt.pcolor(X, T, u_time_solution[i], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$t$')
-    plt.title(r'$u(x, t)$')
-
-    plt.figure()
-    t_plot_array = np.array(t_plot_array)
-    for i in range(n_teeth):
-        X, T = np.meshgrid(x_plot_array[i], t_plot_array)
-        plt.pcolor(X, T, v_time_solution[i], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$t$')
-    plt.title(r'$v(x, t)$')
-
     plt.show()
 
+def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
+    len_uv = len(z0) // 2
+    n_points_per_tooth = len_uv // n_teeth
+
+    # Convert the numpy array to the patches datastructure
+    u0 = z0[0:len_uv]
+    v0 = z0[len_uv:]
+    u_patches = []
+    v_patches = []
+    for i in range(n_teeth):
+        u_patches.append(u0[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+        v_patches.append(v0[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+
+    # Do time-evolution over an interval of size T.
+    n_steps = int(T / T_patch)
+    for _ in range(n_steps):
+        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params)
+
+    # Convert patches datastructure back to a single numpy array
+    u_new = np.concatenate(u_patches)
+    v_new = np.concatenate(v_patches)
+    z_new = np.concatenate((u_new, v_new))
+
+    # Return the psi - function
+    return (z0 - z_new) / T
+
+def findSteadyStateNewtonGMRES(return_ss=False):
+    # Domain parameters
+    L = 20.0
+    n_teeth = 11
+    n_gaps = n_teeth - 1
+    gap_over_tooth_size_ratio = 1
+    n_points_per_tooth = 11
+    n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
+    N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
+    dx = L / (N - 1)
+
+    # Model parameters
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
+
+    # Initial condition - divide over all teeth
+    x_array = np.linspace(0.0, L, N)
+    x_plot_array = []
+    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    u0, v0 = fixInitialBCs(u0, v0)
+
+    # Run the Euler scheme for a decent initial condition, and convert to patch datastructure
+    T = 100.0
+    dt = 1.e-3
+    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+
+    # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
+    T_psi = 1.0
+    T_patch = 10 * dt
+    u_patch_euler = []
+    v_patch_euler = []
+    for i in range(n_teeth):
+        x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    z_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
+    print('len z euler', len(z_euler))
+    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    print('Psi Euler', lg.norm(psi(z_euler)))
+
+    # Do Newton - GMRES to find psi(z) = 0 
+    tolerance = 1.e-14
+    cb = lambda x, f: print(lg.norm(f))
+    try:
+        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', callback=cb, maxiter=200)
+    except opt.NoConvergence as err:
+        str_err = str(err)
+        str_err = str_err[1:len(str_err)-1]
+        z_ss = np.fromstring(str_err, dtype=float, sep=' ')
+
+    if return_ss:
+        return np.concatenate(x_plot_array), z_ss
+
+    # Convert the found steady-state to the gap-tooth datastructure and plot
+    print('len(z_ss)', len(z_ss))
+    N_ss = len(z_ss) // 2
+    u_ss = z_ss[0:N_ss]
+    v_ss = z_ss[N_ss:]
+    print('len uv_ss', len(u_ss), len(v_ss))
+    print(v_ss)
+    u_patch_ss = []
+    v_patch_ss = []
+    for i in range(n_teeth):
+        print('i =', i)
+        print(v_ss[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        u_patch_ss.append(u_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+        v_patch_ss.append(v_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+    #print(len(u_patch_ss), u_patch_ss)
+    #print(len(v_patch_ss), v_patch_ss)
+    for i in range(n_teeth):
+        #print(u_patch_ss[i])
+        if i == 0:
+            plt.plot(x_plot_array[i], u_patch_ss[i], label=r'Newton - GMRES $u(x)$', color='blue')
+            plt.plot(x_plot_array[i], v_patch_ss[i], label=r'Newton - GMRES $v(x)$', color='orange')
+        else:
+            plt.plot(x_plot_array[i], u_patch_ss[i], color='blue')
+            plt.plot(x_plot_array[i], v_patch_ss[i], color='orange')
+    plt.title('Steady - State Gap-Tooth')
+    plt.xlabel(r'$x$')
+    plt.ylabel(r'$u, v$', rotation=0)
+    plt.legend()
+    plt.show()
+
+
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment', dest='experiment', nargs='?')
+
+    return parser.parse_args()
+
 if __name__ == '__main__':
-    patchTimestepper()
+    args = parseArguments()
+    
+    if args.experiment == 'ss':
+        findSteadyStateNewtonGMRES()
+    elif args.experiment == 'evolution':
+        patchTimestepper()
+    else:
+        print('Select either --experiment ss or --experiment evolution')

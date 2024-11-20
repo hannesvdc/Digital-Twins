@@ -218,7 +218,6 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
     z_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
-    print('len z euler', len(z_euler))
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Euler', lg.norm(psi(z_euler)))
 
@@ -236,23 +235,15 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         return np.concatenate(x_plot_array), z_ss
 
     # Convert the found steady-state to the gap-tooth datastructure and plot
-    print('len(z_ss)', len(z_ss))
     N_ss = len(z_ss) // 2
     u_ss = z_ss[0:N_ss]
     v_ss = z_ss[N_ss:]
-    print('len uv_ss', len(u_ss), len(v_ss))
-    print(v_ss)
     u_patch_ss = []
     v_patch_ss = []
     for i in range(n_teeth):
-        print('i =', i)
-        print(v_ss[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         u_patch_ss.append(u_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
         v_patch_ss.append(v_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
-    #print(len(u_patch_ss), u_patch_ss)
-    #print(len(v_patch_ss), v_patch_ss)
     for i in range(n_teeth):
-        #print(u_patch_ss[i])
         if i == 0:
             plt.plot(x_plot_array[i], u_patch_ss[i], label=r'Newton - GMRES $u(x)$', color='blue')
             plt.plot(x_plot_array[i], v_patch_ss[i], label=r'Newton - GMRES $v(x)$', color='orange')

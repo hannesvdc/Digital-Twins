@@ -56,8 +56,6 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
     print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(0, np.mean(x_path[0][0:N]), eps, ds)
     print(print_str)
 
-    #eig_vals = [sigma]
-    #q = q0 / np.sqrt(np.vdot(q0, q0))
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
         Gx_v = lambda v: dGdx_v(x, v, eps)
@@ -93,19 +91,12 @@ def numericalContinuation(x0, eps0, initial_tangent, M, max_steps, ds, ds_min, d
                 ds = max(0.5*ds, ds_min)
         else:
             print('Minimal Arclength Size is too large. Aborting.')
-            return x_path, eps_path#, eig_vals
-        
-        # Calculate the eigenvalue of Gx_v with minimal real part
-        #print('calculating eigenvalue')
-        #A = lambda w: dGdx_v(x, w, eps)
-        #sigma, q = shiftInvertArnoldiSimple(A, sigma, q, tolerance)
-        #eig_vals.append(sigma)
-        #print('sigma', sigma)
+            return x_path, eps_path
 		
         print_str = 'Step {0:3d}:\t <u>: {1:4f}\t eps: {2:4f}\t ds: {3:6f}'.format(n, np.mean(x_path[-1][0:N]), eps, ds)
         print(print_str)
 
-    return x_path, eps_path#, eig_vals
+    return x_path, eps_path
 
 """
 Routine that calculates the bifurcation diagram of a timestepper for the Fitzhugh-Nagumo PDE. Steady states of 

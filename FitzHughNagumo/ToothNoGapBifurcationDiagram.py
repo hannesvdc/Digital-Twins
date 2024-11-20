@@ -93,7 +93,7 @@ def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
 
 			# Corrector: Newton - Krylov
             try:
-                q_new = opt.newton_krylov(F, q_p, f_tol=tolerance, line_search=None)
+                q_new = opt.newton_krylov(F, q_p, f_tol=tolerance)
                 z = q_new[0:M]
                 eps = q_new[M]
                 z_path.append(np.copy(z))

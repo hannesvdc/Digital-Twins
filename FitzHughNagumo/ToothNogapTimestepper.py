@@ -107,6 +107,8 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='k
     return (z0 - z_new) / T
 
 def patchTimestepper(plot=True):
+    BSpline.ClampedCubicSpline.lu_exists = False
+    
     # Domain parameters
     L = 20.0
     n_teeth = 21
@@ -142,7 +144,7 @@ def patchTimestepper(plot=True):
     for k in range(n_patch_steps):
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
-        u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params)
+        u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
 
     # Calculate psi - value
     T_psi = 1.0
@@ -170,6 +172,8 @@ def patchTimestepper(plot=True):
     plt.show()
 
 def findSteadyStateNewtonGMRES(return_ss=False):
+    BSpline.ClampedCubicSpline.lu_exists = False
+    
     # Domain parameters
     L = 20.0
     n_teeth = 21
@@ -197,7 +201,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     T_psi = 1.0
     dt = 1.e-3
     T_patch = 10 * dt
-    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
 
     # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)

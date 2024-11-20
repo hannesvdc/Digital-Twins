@@ -43,10 +43,10 @@ def dGdeps(z, eps):
 
 # Calculates the tangent to the path at the current point as (Gx^{-1} G_eps, -1).
 def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
-    x0 = prev_tangent[0:M] / prev_tangent[M]
+    z0 = prev_tangent[0:M] / prev_tangent[M]
     A = slg.LinearOperator(matvec=Gx_v, shape=(M,M))
 
-    _tangent = slg.gmres(A, G_eps, x0=x0, atol=tolerance)[0]
+    _tangent = slg.gmres(A, G_eps, x0=z0, atol=tolerance)[0]
     tangent = np.append(_tangent, -1.0)
     tangent = tangent / lg.norm(tangent)
 
@@ -73,7 +73,7 @@ def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
 
     for n in range(1, max_steps+1):
 		# Calculate the tangent to the curve at current point 
-        Gz_w = lambda w: dGdz_w(x, w, eps)
+        Gz_w = lambda w: dGdz_w(z, w, eps)
         Geps = dGdeps(z, eps)
         tangent = computeTangent(Gz_w, Geps, prev_tangent, M, tolerance)
 
@@ -112,3 +112,63 @@ def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
         print(print_str)
 
     return z_path, eps_path
+
+"""
+Routine that calculates the bifurcation diagram of a timestepper for the Fitzhugh-Nagumo PDE. Steady states of 
+the pde equal fixex points of the timespper, or zeros of psi(x) = (x - s_T(x)) / T, with s_T the timestepper.
+"""
+def calculateBifurcationDiagram():
+    eps0 = 0.1
+    u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
+    z0 = np.concatenate((u0, v0))
+
+    # Calculate a good initial condition z0 on the path by first running an Euler simulator
+    # and then calling Newton-Krylov
+    print('Calcuating Initial Point on the Bifurcation Diagram ...')
+    M = 2 * N
+    tolerance = 1.e-6
+    F = lambda z: G(z, eps0)
+    z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance)
+
+    # Continuation Parameters
+    max_steps = 1900
+    ds_min = 1.e-6
+    ds_max = 0.01
+    ds = 0.001
+
+    # Calculate the tangent to the path at the initial condition x0
+    rng = rd.RandomState()
+    random_tangent = rng.normal(0.0, 1.0, M+1)
+    initial_tangent = computeTangent(lambda v: dGdz_w(z0, v, eps0), dGdeps(z0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
+    initial_tangent = initial_tangent / lg.norm(initial_tangent)
+
+    # Do actual numerical continuation in both directions
+    if initial_tangent[-1] < 0.0: # Decreasing eps
+        print('Increasing eps first')
+        sign = 1.0
+    else:
+        sign = -1.0
+    z1_path, eps1_path = numericalContinuation(z0, eps0,  sign * initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
+    z2_path, eps2_path = numericalContinuation(z0, eps0, -sign * initial_tangent, max_steps, ds, ds_min, ds_max, tolerance)
+
+    # Store the full path
+    z1_path = np.array(z1_path)
+    z2_path = np.array(z2_path)
+    eps1_path = np.array(eps1_path)
+    eps2_path = np.array(eps2_path)
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    np.save(directory + 'toothnogap_bf_diagram.npy', np.hstack((z1_path, eps1_path[:,np.newaxis], z2_path, eps2_path[:,np.newaxis])))
+
+    # Plot both branches
+    plot_z1_path = np.average(z1_path[:, 0:N], axis=1)
+    plot_z2_path = np.average(z2_path[:, 0:N], axis=1)
+    plt.plot(eps1_path, plot_z1_path, color='blue', label='Branch 1')
+    plt.plot(eps2_path, plot_z2_path, color='red', label='Branch 2')
+    plt.xlabel(r'$\varepsilon$')
+    plt.ylabel(r'$<u>$')
+    plt.show()
+
+
+if __name__ == '__main__':
+    calculateBifurcationDiagram()

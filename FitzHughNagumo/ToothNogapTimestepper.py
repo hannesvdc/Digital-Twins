@@ -198,7 +198,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
     
     # Gap-Tooth Psi Function 
-    T_psi = 0.2 #Normally 1.0
+    T_psi = 1.0
     dt = 1.e-3
     T_patch = 10 * dt
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')

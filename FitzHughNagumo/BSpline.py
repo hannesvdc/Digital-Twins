@@ -1,8 +1,9 @@
 import numpy as np
 import numpy.linalg as lg
+import scipy.sparse as sp
 
 class ClampedCubicSpline:
-    def __init__(self, x, f, left_bc=0.0, right_bc=1.0):
+    def __init__(self, x, f, left_bc=0.0, right_bc=1.0, solver='direct'):
         self.x = np.copy(x)
         self.f = np.copy(f)
         self.n = len(self.x) - 1
@@ -48,7 +49,11 @@ class ClampedCubicSpline:
             b[2*i + 2] = self.f[i+1]
 
         # Solve for the coefficients y = [a, b, c, d]
-        y = lg.solve(A, b)
+        if solver == 'direct':
+            y = lg.solve(A, b) # Idea: Use Krylov method (GMRES, L-GMRES, ...)
+        elif solver == 'krylov':
+            A_csc = sp.csc_matrix(A)
+            y = sp.linalg.spsolve(A_csc, b=b)
         self.a = y[0:self.n]
         self.b = y[self.n:2*self.n]
         self.c = y[2*self.n:3*self.n]

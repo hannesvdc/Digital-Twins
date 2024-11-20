@@ -61,8 +61,8 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
         x_spline_values.extend([x_array[patch][0], x_array[patch][-1]])
         u_spline_values.extend([u0[patch][0], u0[patch][-1]])
         v_spline_values.extend([v0[patch][0], v0[patch][-1]])
-    u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L)
-    v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L)
+    u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L, solver='krylov')
+    v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L, solver='krylov')
 
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []

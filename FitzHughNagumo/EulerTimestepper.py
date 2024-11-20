@@ -3,6 +3,8 @@ import numpy.linalg as lg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
+import argparse
+
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
 
@@ -134,7 +136,8 @@ def findSteadyState(return_ss=False):
         cb = lambda x, f: print(lg.norm(f))
         x_ss = opt.newton_krylov(F, x0, rdiff=1.e-8, callback=cb, f_tol=tolerance, method='gmres')
     except opt.NoConvergence as err:
-        str_err = str(err)[1:len(str_err)-1]
+        str_err = str(err)
+        str_err = str_err[1:len(str_err)-1]
         x_ss = np.fromstring(str_err, dtype=float, sep=' ')
 
     if return_ss:
@@ -150,6 +153,16 @@ def findSteadyState(return_ss=False):
     plt.legend()
     plt.show()
 
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment', dest='experiment', nargs='?')
+
+    return parser.parse_args()
+
 if __name__ == '__main__':
-    #plotFitzHughNagumoSolution()
-    findSteadyState()
+    args = parseArguments()
+
+    if args.experiment == 'evolution':
+        plotFitzHughNagumoSolution()
+    elif args.experiment == 'ss':
+        findSteadyState()

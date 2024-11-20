@@ -5,7 +5,6 @@ from ToothNogapTimestepper import findSteadyStateNewtonGMRES as calc_ss_tooth
 
 x_euler, ss_euler = calc_ss_euler(return_ss=True)
 x_tooth, ss_tooth = calc_ss_tooth(return_ss=True)
-print(ss_tooth)
 
 # Extract U and V
 N_euler = len(ss_euler) // 2

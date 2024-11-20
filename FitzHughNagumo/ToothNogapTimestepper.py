@@ -135,9 +135,9 @@ def patchTimestepper(plot=True):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 200.0 #450.0
+    T = 450.0
     dt = 1.e-3
-    T_patch = 1 * dt
+    T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
         if k % 1000 == 0:

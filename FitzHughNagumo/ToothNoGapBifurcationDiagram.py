@@ -9,6 +9,7 @@ import BSpline
 BSpline.ClampedCubicSpline.lu_exists = False
 
 from ToothNoGapTimestepper import psiPatchNogap, sigmoid
+from EulerTimestepper import fhn_euler_timestepper
 
 # Model Parameters
 a0 = -0.03
@@ -28,7 +29,7 @@ for i in range(n_teeth):
     x_patch_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
 # Time Discretization Parameters
-T_psi = 1.0
+T_psi = 0.2
 dt = 1.e-3
 T_patch = 10 * dt
 
@@ -125,6 +126,8 @@ def calculateBifurcationDiagram():
     eps0 = 0.1
     u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
+    params['eps'] = eps0
+    u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
     z0 = np.concatenate((u0, v0))
 
     # Calculate a good initial condition z0 on the path by first running an Euler timestepper
@@ -137,9 +140,9 @@ def calculateBifurcationDiagram():
     print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 100 # Just to get something initially
+    max_steps = 1000
     ds_min = 1.e-6
-    ds_max = 0.01
+    ds_max = 0.1
     ds = 0.001
 
     # Calculate the tangent to the path at the initial condition x0

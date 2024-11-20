@@ -137,7 +137,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     # Do time-evolution over an interval of size T.
     n_steps = int(T / T_patch)
     for k in range(n_steps):
-        print('t psi', k * T_patch)
+        #print('t psi', k * T_patch)
         u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params)
 
     # Convert patches datastructure back to a single numpy array
@@ -148,7 +148,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     # Return the psi - function
     return (z0 - z_new) / T
 
-def patchTimestepper():
+def patchTimestepper(plot=True):
     # Domain parameters
     L = 20.0
     n_teeth = 21
@@ -182,7 +182,7 @@ def patchTimestepper():
         #v_time_solution.append(np.copy(v_sol[i])[np.newaxis, :])
 
     # Gap-Tooth Timestepping 
-    T = 450.0
+    T = 200.0 # 450.0
     dt = 1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
@@ -196,6 +196,9 @@ def patchTimestepper():
     z_sol = np.concatenate((np.concatenate(u_sol), np.concatenate(v_sol)))
     psi_val = psiPatchNogap(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('psi', lg.norm(psi_val), np.max(np.abs(psi_val)))
+
+    if plot is False:
+        return z_sol
 
     # Euler Timestepping for Comparison
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
@@ -243,30 +246,36 @@ def findSteadyStateNewtonGMRES():
     T_patch = 10 * dt
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
 
-    # Do Euler timestepping and calculate psi(euler steady - state)
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=True)
+    # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
+    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
     z_euler = np.concatenate((u_euler, v_euler))
     print('Psi Euler', lg.norm(psi(z_euler)))
 
-    # Do Newton - GMRES to find psi = 0 
-    tolerance = 1.e-6
+    # Do Newton - GMRES to find psi(z) = 0 
+    tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
-    z0 = np.concatenate((u0, v0))
     try:
-        z_ss = opt.newton_krylov(psi, z0, f_tol=tolerance, method='lgmres', verbose=True, callback=cb, maxiter=200)
+        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', verbose=True, callback=cb, maxiter=200)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
         print('eror msg', str_err)
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
 
+    z_timestepper = patchTimestepper(plot=False)
+
     # Plot the steady-state
     u_ss = z_ss[0:N]
     v_ss = z_ss[N:]
-    plt.plot(x_array, u_euler, linestyle='dashed', label=r'Steady - State $u(x)$ Reference')
-    plt.plot(x_array, v_euler, linestyle='dashed', label=r'Steady - State $v(x)$ Reference')
-    plt.plot(x_array, u_ss, linestyle='dashdot', label=r'Steady - State $u(x)$ Patches')
-    plt.plot(x_array, v_ss, linestyle='dashdot', label=r'Steady - State $v(x)$ Patches')
+    u_ts = z_timestepper[0:N]
+    v_ts = z_timestepper[N:]
+    #plt.plot(x_array, u_euler, linestyle='dashed', label=r'Steady - State $u(x)$ Reference')
+    #plt.plot(x_array, v_euler, linestyle='dashed', label=r'Steady - State $v(x)$ Reference')
+    plt.plot(x_array, u_ts, linestyle='dashed', label=r'Time Evolution $u(x)$')
+    plt.plot(x_array, v_ts, linestyle='dashed', label=r'Time Evolution $v(x)$')
+    plt.plot(x_array, u_ss, linestyle='dotted', label=r'Newton - GMRES $u(x)$')
+    plt.plot(x_array, v_ss, linestyle='dotted', label=r'Newton - GMRES $v(x)$')
+    plt.title('Steady - State Patches without Gaps')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$u, v$', rotation=0)
     plt.legend()

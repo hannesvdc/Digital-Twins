@@ -140,7 +140,7 @@ def calculateBifurcationDiagram():
     print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 1000
+    max_steps = 500 # To get an initial idea
     ds_min = 1.e-6
     ds_max = 0.1
     ds = 0.001

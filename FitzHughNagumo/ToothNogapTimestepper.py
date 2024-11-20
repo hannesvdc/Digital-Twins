@@ -44,19 +44,6 @@ def fhn_euler_neumann_patch(u, v, dx, dt, a, b, params):
 
     return u_new, v_new
 
-# def fhn_euler_dirichlet_patch(u, v, dx, dt, ul, ur, vl, vr, params):
-#     n = len(u)
-#     u_int = np.copy(u)
-#     v_int = np.copy(v)
-#     u_int[0] = ul
-#     u_int[-1] = ur
-#     v_int[0] = vl
-#     v_int[-1] = vr
-#     u_rhs, v_rhs = fhn_rhs(u_int, v_int, dx, params)
-#     u_int[1:n-1] = u_int[1:n-1] + dt * u_rhs[1:n-1]
-#     v_int[1:n-1] = v_int[1:n-1] + dt * v_rhs[1:n-1]
-
-#     return u_int, v_int
 
 def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
     N_steps = int(T / dt)
@@ -64,11 +51,6 @@ def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
         u, v = fhn_euler_neumann_patch(u, v, dx, dt, a, b, params)
     return u, v
 
-# def eulerDirichletPathTimestepper(u, v, dx, dt, T, ul, ur, vl, vr, params):
-#     N_steps = int(T / dt)
-#     for _ in range(N_steps):
-#         u, v = fhn_euler_dirichlet_patch(u, v, dx, dt, ul, ur, vl, vr, params)
-#     return u, v
 def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
    
     # Build the interpolating spline based on left- and right endpoints
@@ -76,15 +58,9 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
     u_spline_values = [u0[0][0]]
     v_spline_values = [v0[0][0]]
     for patch in range(n_teeth): #TODO watch out for n_teeth and n_teeth-1
-        #x_spline_values.append( 0.5*(x_array[patch][-1] + x_array[patch+1][0]) )
-        #u_spline_values.append( 0.5*(u0[patch][-1] + u0[patch+1][0]) )
-        #v_spline_values.append( 0.5*(v0[patch][-1] + v0[patch+1][0]) )
         x_spline_values.append( x_array[patch][-1] )
         u_spline_values.append( u0[patch][-1] )
         v_spline_values.append( v0[patch][-1] )
-    #x_spline_values.append(L)
-    #u_spline_values.append(u0[-1][-1])
-    #v_spline_values.append(v0[-1][-1])
     u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L)
     v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L)
 
@@ -109,12 +85,7 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
         a = [u_spline.derivative(left_x), v_spline.derivative(left_x)]
         b = [u_spline.derivative(right_x), v_spline.derivative(right_x)]
 
-        u0_new = u_spline(x_array[patch])
-        v0_new = v_spline(x_array[patch])
-
-        #u_new, v_new = eulerDirichletPathTimestepper(u0[patch], v0[patch], dx, dt, T_patch, u_spline([left_x])[0], u_spline([right_x])[0], v_spline([left_x])[0], v_spline([right_x])[0], params)
         u_new, v_new = eulerNeumannPathTimestepper(u0[patch], v0[patch], dx, dt, T_patch, a, b, params)
-        #u_new, v_new = eulerNeumannPathTimestepper(u0_new, v0_new, dx, dt, T_patch, a, b, params)
         return_u.append(u_new)
         return_v.append(v_new)
 
@@ -136,8 +107,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
 
     # Do time-evolution over an interval of size T.
     n_steps = int(T / T_patch)
-    for k in range(n_steps):
-        #print('t psi', k * T_patch)
+    for _ in range(n_steps):
         u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params)
 
     # Convert patches datastructure back to a single numpy array
@@ -171,15 +141,10 @@ def patchTimestepper(plot=True):
     u0, v0 = fixInitialBCs(u0, v0)
     u_sol = []
     v_sol = []
-    #u_time_solution = []
-    #v_time_solution = []
-    #t_plot_array = [0.0]
     for i in range(n_teeth):
         u_sol.append(u0[i * n_points_per_tooth : (i+1) *  n_points_per_tooth])
         v_sol.append(v0[i * n_points_per_tooth : (i+1) *  n_points_per_tooth])
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
-        #u_time_solution.append(np.copy(u_sol[i])[np.newaxis, :])
-        #v_time_solution.append(np.copy(v_sol[i])[np.newaxis, :])
 
     # Gap-Tooth Timestepping 
     T = 200.0 # 450.0
@@ -187,8 +152,8 @@ def patchTimestepper(plot=True):
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
-        #if k % 1000 == 0:
-        print('t =', round(k*T_patch, 4))
+        if k % 1000 == 0:
+            print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params)
 
     # Calculate psi - value
@@ -216,7 +181,7 @@ def patchTimestepper(plot=True):
     plt.legend()
     plt.show()
 
-def findSteadyStateNewtonGMRES():
+def findSteadyStateNewtonGMRES(return_ss=False):
     # Domain parameters
     L = 20.0
     n_teeth = 21
@@ -243,7 +208,7 @@ def findSteadyStateNewtonGMRES():
     # Gap-Tooth Psi Function 
     T_psi = 1.0
     dt = 1.e-3
-    T_patch = 10 * dt
+    T_patch = 1 * dt # normally 10
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
 
     # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
@@ -261,6 +226,9 @@ def findSteadyStateNewtonGMRES():
         str_err = str_err[1:len(str_err)-1]
         print('eror msg', str_err)
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
+
+    if return_ss:
+        return np.concatenate(x_plot_array), z_ss
 
     z_timestepper = patchTimestepper(plot=False)
 

@@ -109,7 +109,7 @@ def plotFitzHughNagumoSolution():
     plt.title(r'$v(x, t)$')
     plt.show()
 
-def findSteadyState():
+def findSteadyState(return_ss=False):
     # Method parameters
     L = 20.0
     N = 200
@@ -136,6 +136,9 @@ def findSteadyState():
     except opt.NoConvergence as err:
         str_err = str(err)[1:len(str_err)-1]
         x_ss = np.fromstring(str_err, dtype=float, sep=' ')
+
+    if return_ss:
+        return x_array, x_ss
 
     u_ss = x_ss[0:N]
     v_ss = x_ss[N:]

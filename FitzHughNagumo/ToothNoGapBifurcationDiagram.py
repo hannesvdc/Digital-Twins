@@ -5,7 +5,8 @@ import scipy.sparse.linalg as slg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
-import argparse
+import BSpline
+BSpline.ClampedCubicSpline.lu_exists = False
 
 from ToothNoGapTimestepper import psiPatchNogap, sigmoid
 
@@ -34,7 +35,7 @@ T_patch = 10 * dt
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='krylov') 
+    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct') 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8

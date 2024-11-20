@@ -216,7 +216,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
-    T_psi = 1.0
+    T_psi = 0.1 # Normally 1.0, chekcing other values too
     T_patch = 10 * dt
     u_patch_euler = []
     v_patch_euler = []

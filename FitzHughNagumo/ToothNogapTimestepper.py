@@ -54,34 +54,16 @@ def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
 def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
    
     # Build the interpolating spline based on left- and right endpoints
-    #x_spline_values = [0.0]
-    #u_spline_values = [u0[0][0]]
-    #v_spline_values = [v0[0][0]]
     middle_index = len(u0[0]) // 2
     x_spline_values = []
     u_spline_values = []
     v_spline_values = []
-    for patch in range(n_teeth): #TODO watch out for n_teeth and n_teeth-1
-        #x_spline_values.append( x_array[patch][-1] )
-        #u_spline_values.append( u0[patch][-1] )
-        #v_spline_values.append( v0[patch][-1] )
+    for patch in range(n_teeth):
         x_spline_values.append(x_array[patch][middle_index])
         u_spline_values.append(u0[patch][middle_index])
         v_spline_values.append(v0[patch][middle_index])
     u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L)
     v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L)
-
-    # Plot the spline and patch solutions for debugging purposes
-    # x_plot_array = np.linspace(0.0, L, 1000)
-    # u_spline_array = u_spline(x_plot_array)
-    # v_spline_array = v_spline(x_plot_array)
-    # plt.plot(x_plot_array, u_spline_array, label='Spline u(x)', color='green')
-    # plt.plot(x_plot_array, v_spline_array, label='Spline v(x)', color='red')
-    # for patch in range(len(x_array)):
-    #    plt.plot(x_array[patch], u0[patch], color='blue')
-    #    plt.plot(x_array[patch], v0[patch], color='orange')
-    # plt.legend()
-    # plt.show()
 
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []
@@ -101,7 +83,6 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
 def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
-    assert n_points_per_tooth * n_teeth == len_uv
 
     # Convert the numpy array to the patches datastructure
     u0 = z0[0:len_uv]
@@ -154,7 +135,7 @@ def patchTimestepper(plot=True):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 200.0 # 450.0
+    T = 200.0 #450.0
     dt = 1.e-3
     T_patch = 1 * dt
     n_patch_steps = int(T / T_patch)
@@ -213,7 +194,6 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
     
     # Gap-Tooth Psi Function 
-    print('here')
     T_psi = 1.0
     dt = 1.e-3
     T_patch = 10 * dt
@@ -222,8 +202,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
     z_euler = np.concatenate((u_euler, v_euler))
-    print(z_euler)
-    #print('Psi Euler', lg.norm(psi(z_euler)))
+    print('Psi Euler', lg.norm(psi(z_euler)))
 
     # Do Newton - GMRES to find psi(z) = 0 
     tolerance = 1.e-14
@@ -233,7 +212,6 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
-        print('eror msg', str_err)
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
 
     if return_ss:
@@ -246,8 +224,6 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     v_ss = z_ss[N:]
     u_ts = z_timestepper[0:N]
     v_ts = z_timestepper[N:]
-    #plt.plot(x_array, u_euler, linestyle='dashed', label=r'Steady - State $u(x)$ Reference')
-    #plt.plot(x_array, v_euler, linestyle='dashed', label=r'Steady - State $v(x)$ Reference')
     plt.plot(x_array, u_ts, linestyle='dashed', label=r'Time Evolution $u(x)$')
     plt.plot(x_array, v_ts, linestyle='dashed', label=r'Time Evolution $v(x)$')
     plt.plot(x_array, u_ss, linestyle='dotted', label=r'Newton - GMRES $u(x)$')

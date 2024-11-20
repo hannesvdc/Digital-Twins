@@ -51,7 +51,7 @@ def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
         u, v = fhn_euler_neumann_patch(u, v, dx, dt, a, b, params)
     return u, v
 
-def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
+def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params, solver='krylov'):
    
     # Build the interpolating spline based on left- and right endpoints
     middle_index = len(u0[0]) // 2
@@ -62,8 +62,8 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
         x_spline_values.append(x_array[patch][middle_index])
         u_spline_values.append(u0[patch][middle_index])
         v_spline_values.append(v0[patch][middle_index])
-    u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L, solver='krylov')
-    v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L, solver='krylov')
+    u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L, solver=solver)
+    v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L, solver=solver)
 
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []
@@ -80,7 +80,7 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
 
     return return_u, return_v
 
-def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
+def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='krylov'):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
 
@@ -96,7 +96,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     # Do time-evolution over an interval of size T.
     n_steps = int(T / T_patch)
     for _ in range(n_steps):
-        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params)
+        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params, solver=solver)
 
     # Convert patches datastructure back to a single numpy array
     u_new = np.concatenate(u_patches)

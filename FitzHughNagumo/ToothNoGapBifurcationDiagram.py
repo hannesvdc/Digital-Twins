@@ -34,7 +34,7 @@ T_patch = 10 * dt
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params) 
+    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='krylov') 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8

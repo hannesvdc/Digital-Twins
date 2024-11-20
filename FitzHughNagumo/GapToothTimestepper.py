@@ -79,7 +79,7 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
 
     return return_u, return_v
 
-def patchTimestepper():
+def patchTimestepper(return_sol=False):
     # Domain parameters
     L = 20.0
     n_teeth = 11
@@ -111,7 +111,7 @@ def patchTimestepper():
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 100.0
+    T = 450.0
     dt = 1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
@@ -125,6 +125,9 @@ def patchTimestepper():
     z_sol = np.concatenate((np.concatenate(u_sol), np.concatenate(v_sol)))
     psi_val = psiPatchNogap(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Gap-Tooth', lg.norm(psi_val))
+
+    if return_sol:
+        return u_sol, v_sol
 
     # Euler Timestepping for Comparison
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
@@ -231,9 +234,6 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         str_err = str_err[1:len(str_err)-1]
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
 
-    if return_ss:
-        return np.concatenate(x_plot_array), z_ss
-
     # Convert the found steady-state to the gap-tooth datastructure and plot
     N_ss = len(z_ss) // 2
     u_ss = z_ss[0:N_ss]
@@ -243,14 +243,25 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     for i in range(n_teeth):
         u_patch_ss.append(u_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
         v_patch_ss.append(v_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+
+    if return_ss:
+        return x_plot_array, u_patch_ss, v_patch_ss
+
+    # Compare the steady - state to the gap-tooth timestepper
+    u_ts, v_ts = patchTimestepper(return_sol=True)
+    
     for i in range(n_teeth):
         if i == 0:
-            plt.plot(x_plot_array[i], u_patch_ss[i], label=r'Newton - GMRES $u(x)$', color='blue')
-            plt.plot(x_plot_array[i], v_patch_ss[i], label=r'Newton - GMRES $v(x)$', color='orange')
+            plt.plot(x_plot_array[i], u_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $u(x)$', color='blue')
+            plt.plot(x_plot_array[i], v_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $v(x)$', color='orange')
+            plt.plot(x_plot_array[i], u_ts[i], linestyle='dotted', label=r'Gap-Tooth $u(x)$', color='green')
+            plt.plot(x_plot_array[i], v_ts[i], linestyle='dotted', label=r'Gap-Tooth $v(x)$', color='red')
         else:
             plt.plot(x_plot_array[i], u_patch_ss[i], color='blue')
             plt.plot(x_plot_array[i], v_patch_ss[i], color='orange')
-    plt.title('Steady - State Gap-Tooth')
+            plt.plot(x_plot_array[i], u_ts[i], linestyle='dotted', color='green')
+            plt.plot(x_plot_array[i], v_ts[i], linestyle='dotted', color='red')
+    plt.title('Steady-State Gap-Tooth')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$u, v$', rotation=0)
     plt.legend()

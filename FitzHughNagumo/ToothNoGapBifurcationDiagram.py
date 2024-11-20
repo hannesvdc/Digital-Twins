@@ -120,7 +120,7 @@ def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
 
 """
 Routine that calculates the bifurcation diagram of a timestepper for the Fitzhugh-Nagumo PDE. Steady states of 
-the pde equal fixex points of the timespper, or zeros of psi(x) = (x - s_T(x)) / T, with s_T the timestepper.
+the pde equal fixex points of the timespper, or zeros of psi(x) = (x - phis_T(x)) / T, with phi_T the timestepper.
 """
 def calculateBifurcationDiagram():
     eps0 = 0.1
@@ -140,7 +140,7 @@ def calculateBifurcationDiagram():
     print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 500 # To get an initial idea
+    max_steps = 200
     ds_min = 1.e-6
     ds_max = 0.1
     ds = 0.001

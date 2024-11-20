@@ -22,6 +22,9 @@ n_points_per_tooth = 10
 N = n_teeth * n_points_per_tooth
 dx = L / (N - 1)
 x_array = np.linspace(0.0, L, N)
+x_patch_array = []
+for i in range(n_teeth):
+    x_patch_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
 # Time Discretization Parameters
 T_psi = 1.0
@@ -31,7 +34,7 @@ T_patch = 10 * dt
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatchNogap(z, x_array, L, n_teeth, dx, dt, T_patch, T_psi, params) 
+    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params) 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8
@@ -90,7 +93,7 @@ def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_m
 
 			# Corrector: Newton - Krylov
             try:
-                q_new = opt.newton_krylov(F, q_p, f_tol=tolerance)
+                q_new = opt.newton_krylov(F, q_p, f_tol=tolerance, line_search=None)
                 z = q_new[0:M]
                 eps = q_new[M]
                 z_path.append(np.copy(z))
@@ -123,16 +126,17 @@ def calculateBifurcationDiagram():
     v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     z0 = np.concatenate((u0, v0))
 
-    # Calculate a good initial condition z0 on the path by first running an Euler simulator
-    # and then calling Newton-Krylov
+    # Calculate a good initial condition z0 on the path by first running an Euler timestepper
+    # with a sigmoid initial and then calling Newton-Krylov
     print('Calcuating Initial Point on the Bifurcation Diagram ...')
     M = 2 * N
     tolerance = 1.e-6
     F = lambda z: G(z, eps0)
-    z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance)
+    z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance, verbose=True)
+    print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 1900
+    max_steps = 100 # Just to get something initially
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001
@@ -144,6 +148,7 @@ def calculateBifurcationDiagram():
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
 
     # Do actual numerical continuation in both directions
+    print('Runnning Pseudo-Arclength Continuation ...')
     if initial_tangent[-1] < 0.0: # Decreasing eps
         print('Increasing eps first')
         sign = 1.0

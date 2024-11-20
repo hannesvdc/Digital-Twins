@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 from  EulerTimestepper import findSteadyState as calc_ss_euler
-from ToothNogapTimestepper import findSteadyStateNewtonGMRES as calc_ss_tooth
+from ToothNoGapTimestepper import findSteadyStateNewtonGMRES as calc_ss_tooth
 from GapToothTimestepper import findSteadyStateNewtonGMRES as calc_ss_gaptooth
 
 print('\nCalculating Steady-State of the Euler Scheme')

@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 import argparse
 
-from ToothNogapTimestepper import psiPatchNogap, sigmoid
+from ToothNoGapTimestepper import psiPatchNogap, sigmoid
 
 # Model Parameters
 a0 = -0.03

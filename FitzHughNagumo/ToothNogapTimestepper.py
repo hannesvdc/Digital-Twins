@@ -54,27 +54,34 @@ def eulerNeumannPathTimestepper(u, v, dx, dt, T, a, b, params):
 def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params):
    
     # Build the interpolating spline based on left- and right endpoints
-    x_spline_values = [0.0]
-    u_spline_values = [u0[0][0]]
-    v_spline_values = [v0[0][0]]
+    #x_spline_values = [0.0]
+    #u_spline_values = [u0[0][0]]
+    #v_spline_values = [v0[0][0]]
+    middle_index = len(u0[0]) // 2
+    x_spline_values = []
+    u_spline_values = []
+    v_spline_values = []
     for patch in range(n_teeth): #TODO watch out for n_teeth and n_teeth-1
-        x_spline_values.append( x_array[patch][-1] )
-        u_spline_values.append( u0[patch][-1] )
-        v_spline_values.append( v0[patch][-1] )
+        #x_spline_values.append( x_array[patch][-1] )
+        #u_spline_values.append( u0[patch][-1] )
+        #v_spline_values.append( v0[patch][-1] )
+        x_spline_values.append(x_array[patch][middle_index])
+        u_spline_values.append(u0[patch][middle_index])
+        v_spline_values.append(v0[patch][middle_index])
     u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L)
     v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L)
 
     # Plot the spline and patch solutions for debugging purposes
-    #x_plot_array = np.linspace(0.0, L, 1000)
-    #u_spline_array = u_spline(x_plot_array)
-    #v_spline_array = v_spline(x_plot_array)
-    #plt.plot(x_plot_array, u_spline_array, label='Spline u(x)', color='green')
-    #plt.plot(x_plot_array, v_spline_array, label='Spline v(x)', color='red')
-    #for patch in range(len(x_array)):
+    # x_plot_array = np.linspace(0.0, L, 1000)
+    # u_spline_array = u_spline(x_plot_array)
+    # v_spline_array = v_spline(x_plot_array)
+    # plt.plot(x_plot_array, u_spline_array, label='Spline u(x)', color='green')
+    # plt.plot(x_plot_array, v_spline_array, label='Spline v(x)', color='red')
+    # for patch in range(len(x_array)):
     #    plt.plot(x_array[patch], u0[patch], color='blue')
     #    plt.plot(x_array[patch], v0[patch], color='orange')
-    #plt.legend()
-    #plt.show()
+    # plt.legend()
+    # plt.show()
 
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []
@@ -149,7 +156,7 @@ def patchTimestepper(plot=True):
     # Gap-Tooth Timestepping 
     T = 200.0 # 450.0
     dt = 1.e-3
-    T_patch = 10 * dt
+    T_patch = 1 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
         if k % 1000 == 0:
@@ -206,15 +213,17 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
     
     # Gap-Tooth Psi Function 
+    print('here')
     T_psi = 1.0
     dt = 1.e-3
-    T_patch = 1 * dt # normally 10
+    T_patch = 10 * dt
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
 
     # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
     u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
     z_euler = np.concatenate((u_euler, v_euler))
-    print('Psi Euler', lg.norm(psi(z_euler)))
+    print(z_euler)
+    #print('Psi Euler', lg.norm(psi(z_euler)))
 
     # Do Newton - GMRES to find psi(z) = 0 
     tolerance = 1.e-14

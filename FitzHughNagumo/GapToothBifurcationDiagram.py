@@ -42,7 +42,7 @@ T_patch = 10 * dt
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatch(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params) 
+    return psiPatch(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='direct') 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8
@@ -152,9 +152,9 @@ def calculateBifurcationDiagram():
     print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 500
+    max_steps = 170
     ds_min = 1.e-6
-    ds_max = 0.01
+    ds_max = 0.1
     ds = 0.001
 
     # Calculate the tangent to the path at the initial condition x0

@@ -157,7 +157,7 @@ def patchTimestepper(return_sol=False):
     plt.legend()
     plt.show()
 
-def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
+def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct'):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
 
@@ -173,7 +173,7 @@ def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     # Do time-evolution over an interval of size T.
     n_steps = int(T / T_patch)
     for _ in range(n_steps):
-        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
+        u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params, solver=solver)
 
     # Convert patches datastructure back to a single numpy array
     u_new = np.concatenate(u_patches)

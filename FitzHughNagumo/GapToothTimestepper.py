@@ -125,7 +125,7 @@ def patchTimestepper(return_sol=False):
     # Calculate the psi - value of the GapTooth scheme
     T_psi = 1.0
     z_sol = np.concatenate((np.concatenate(u_sol), np.concatenate(v_sol)))
-    psi_val = psiPatchNogap(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    psi_val = psiPatch(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Gap-Tooth', lg.norm(psi_val))
 
     if return_sol:
@@ -141,7 +141,7 @@ def patchTimestepper(return_sol=False):
         u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
     z_patch_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
-    psi_val_euler = psiPatchNogap(z_patch_euler, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    psi_val_euler = psiPatch(z_patch_euler, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Euler', lg.norm(psi_val_euler))
 
     # Plot the solution at final time
@@ -157,7 +157,7 @@ def patchTimestepper(return_sol=False):
     plt.legend()
     plt.show()
 
-def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
+def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
 
@@ -225,7 +225,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
         v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
     z_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
-    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Euler', lg.norm(psi(z_euler)))
 
     # Do Newton - GMRES to find psi(z) = 0 

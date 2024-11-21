@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import BSpline
 BSpline.ClampedCubicSpline.lu_exists = False
 
-from ToothNoGapTimestepper import psiPatchNogap, sigmoid
+from GapToothTimestepper import psiPatch, sigmoid
 from EulerTimestepper import fhn_euler_timestepper
 
 # Model Parameters
@@ -17,16 +17,22 @@ a1 = 2.0
 delta = 4.0
 params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0}
 
-# Spatial Discretization Parameters
+# Domain parameters
 L = 20.0
-n_teeth = 21
-n_points_per_tooth = 10
+n_teeth = 11
+n_gaps = n_teeth - 1
+gap_over_tooth_size_ratio = 1
+n_points_per_tooth = 11
+n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
+N_all = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap # Also counts points in the gaps
+dx = L / (N_all - 1)
 N = n_teeth * n_points_per_tooth
-dx = L / (N - 1)
-x_array = np.linspace(0.0, L, N)
+
+# Initial condition - divide over all teeth
+x_array = np.linspace(0.0, L, N_all)
 x_patch_array = []
 for i in range(n_teeth):
-    x_patch_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+    x_patch_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
 # Time Discretization Parameters
 T_psi = 0.2
@@ -36,7 +42,7 @@ T_patch = 10 * dt
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatchNogap(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct') 
+    return psiPatch(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params) 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8
@@ -63,7 +69,7 @@ def computeTangent(Gx_v, G_eps, prev_tangent, M, tolerance):
 """
 The Internal Numerical Continuation Routine.
 """
-# Variable z = (u, v)
+# Variable z = (u, v), a single ndarray
 def numericalContinuation(z0, eps0, initial_tangent, max_steps, ds, ds_min, ds_max, tolerance):
     M = 2*N
 
@@ -124,18 +130,24 @@ the pde equal fixex points of the timespper, or zeros of psi(x) = (x - phis_T(x)
 """
 def calculateBifurcationDiagram():
     eps0 = 0.1
-    u0 = sigmoid(x_array, 14.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     params['eps'] = eps0
-    u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
-    z0 = np.concatenate((u0, v0))
+    M = 2 * N
+    tolerance = 1.e-6
+    F = lambda z: G(z, eps0)
 
     # Calculate a good initial condition z0 on the path by first running an Euler timestepper
     # with a sigmoid initial and then calling Newton-Krylov
     print('Calcuating Initial Point on the Bifurcation Diagram ...')
-    M = 2 * N
-    tolerance = 1.e-6
-    F = lambda z: G(z, eps0)
+    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
+    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
+    u_patch_0 = []
+    v_patch_0 = []
+    for i in range(n_teeth):
+        u_patch_0.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+        v_patch_0.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    z0 = np.concatenate((np.concatenate(u_patch_0), np.concatenate(v_patch_0))) # Should be a single array
+    print('Type z0', type(z0), len(z0))
     z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance, verbose=True)
     print('Initial Point Found.\n')
 
@@ -167,7 +179,7 @@ def calculateBifurcationDiagram():
     eps1_path = np.array(eps1_path)
     eps2_path = np.array(eps2_path)
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-    np.save(directory + 'toothnogap_bf_diagram.npy', np.hstack((z1_path, eps1_path[:,np.newaxis], z2_path, eps2_path[:,np.newaxis])))
+    np.save(directory + 'gaptooth_bf_diagram.npy', np.hstack((z1_path, eps1_path[:,np.newaxis], z2_path, eps2_path[:,np.newaxis])))
 
     # Plot both branches
     plot_z1_path = np.average(z1_path[:, 0:N], axis=1)
@@ -176,10 +188,9 @@ def calculateBifurcationDiagram():
     plt.plot(eps2_path, plot_z2_path, color='red', label='Branch 2')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
-    plt.title('Bifurcation Diagram of Patch Dynamics without Gaps')
+    plt.title('Bifurcation Diagram of the Gap-Tooth Scheme')
     plt.legend()
     plt.show()
-
 
 if __name__ == '__main__':
     calculateBifurcationDiagram()

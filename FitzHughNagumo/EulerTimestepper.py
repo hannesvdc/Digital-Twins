@@ -113,8 +113,6 @@ def plotFitzHughNagumoSolution():
     t_plot_array = np.linspace(0.0, T, u_solution.shape[0]+1)
     plt.plot(x_array, u, label='u(x, t=450)')
     plt.plot(x_array, v, label='v(x, t=450)')
-    plt.plot(x_array, u0, label='u(x, t=0)')
-    plt.plot(x_array, v0, label='v(x, t=0)')
     plt.legend()
 
     X, Y = np.meshgrid(x_plot_array, t_plot_array)
@@ -167,14 +165,21 @@ def findSteadyState(return_ss=False):
 
     if return_ss:
         return x_array, x_ss
+    
+    # Also do Euler Timestepping for comparison
+    u_euler = np.copy(u0)
+    v_euler = np.copy(v0)
+    for n in range(int(450.0 / dt)):
+        u_euler, v_euler = fhn_euler(u_euler, v_euler, dx, dt, params)
 
     u_ss = x_ss[0:N]
     v_ss = x_ss[N:]
     x_array = np.linspace(0.0, L, N)
-    plt.plot(x_array, u_ss, label=r'$u(x, t=\infty)$')
-    plt.plot(x_array, v_ss, label=r'$v(x, t=\infty)$')
-    plt.plot(x_array, u0, label=r'$u(x, t=0)$')
-    plt.plot(x_array, v0, label=r'$v(x, t=0)$')
+    plt.plot(x_array, u_ss, linestyle='dashed', label=r'Newton-GMRES $u(x)$')
+    plt.plot(x_array, v_ss, linestyle='dashed', label=r'Newton-GMRES $v(x)$')
+    plt.plot(x_array, u_euler+0.005, linestyle='dashdot', label=r'Euler Method $u(x)$')
+    plt.plot(x_array, v_euler+0.005, linestyle='dashdot', label=r'Euler Method $v(x)$')
+    plt.xlabel(r'$x$')
     plt.legend()
     plt.show()
 

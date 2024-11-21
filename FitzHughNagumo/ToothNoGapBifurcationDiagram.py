@@ -29,7 +29,7 @@ for i in range(n_teeth):
     x_patch_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
 # Time Discretization Parameters
-T_psi = 1.0
+T_psi = 0.2
 dt = 1.e-3
 T_patch = 10 * dt
 

@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as lg
 import scipy.optimize as opt
+import scipy.sparse.linalg as slg
 import matplotlib.pyplot as plt
 
 import argparse
@@ -21,6 +22,30 @@ def fhn_rhs(u, v, dx, params):
     v_rhs = params['delta'] * v_xx + params['eps'] * (u - params['a1']*v - params['a0'])
 
     return u_rhs, v_rhs
+
+# right-hand side with boundary conditions incorporated
+def fhn_rhs_arnoldi(u, v, N, dx, params):
+    u_ext = np.hstack([u[0], u, u[-1]])
+    v_ext = np.hstack([v[0], v, v[-1]])
+
+    u_left = np.roll(u_ext, -1)
+    u_right = np.roll(u_ext, 1)
+    v_left = np.roll(v_ext, -1)
+    v_right = np.roll(v_ext, 1)
+
+    u_xx = (u_left - 2.0*u_ext + u_right) / dx**2
+    v_xx = (v_left - 2.0*v_ext + v_right) / dx**2
+
+    u_rhs = u_xx + u_ext - u_ext**3 - v_ext
+    v_rhs = params['delta'] * v_xx + params['eps'] * (u_ext - params['a1']*v_ext - params['a0'])
+
+    return u_rhs[1:N+1], v_rhs[1:N+1]
+
+def f_wrapper(z, N, dx, params):
+    u = z[0:N]
+    v = z[N:]
+    u_rhs, v_rhs = fhn_rhs_arnoldi(u, v, N, dx, params)
+    return np.concatenate((u_rhs, v_rhs))
 
 def fhn_euler(u, v, dx, dt, params):
     u_rhs, v_rhs = fhn_rhs(u, v, dx, params)
@@ -153,6 +178,62 @@ def findSteadyState(return_ss=False):
     plt.legend()
     plt.show()
 
+def calculateEigenvalues():
+    # Method parameters
+    L = 20.0
+    N = 200
+    dx = L / N
+    dt = 1.e-4
+    T_psi = 1.0
+    T = 450.0
+
+    # Model Parameters
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
+
+    # Do time-evolution to get the steady-state
+    print('Calculating the Steady State ...')
+    _, z_ss = findSteadyState(return_ss=True)
+    print('Done.')
+
+    # Calculate the eigenvalues of Psi in steady state
+    print('\nCalculating Leading Eigenvalues of Psi using Arnoldi ...')
+    r_diff = 1.e-8
+    d_psi_mvp = lambda w: (psi(z_ss + r_diff * w, T_psi, dx, dt, params) - psi(z_ss, T_psi, dx, dt, params)) / r_diff
+    D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
+    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='SM', return_eigenvectors=False)
+    print('Done.')
+
+    # Calculate the eigenvalues of the PDE right-hand side in steady state
+    print('\nCalculating Leading Eigenvalues of the PDE using Arnoldi ...')
+    d_f_mvp = lambda w: (f_wrapper(z_ss + r_diff * w, N, dx, params) - f_wrapper(z_ss, N, dx, params)) / r_diff
+    D_f = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_f_mvp)
+    f_eigvals = slg.eigs(D_f, k=2*N-2, which='SM', return_eigenvectors=False)
+    psi_approx_eigvals = (1.0 - np.exp(f_eigvals * T_psi)) / T_psi
+    print('Done.')
+
+    # Plot the Eigenvalues
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\nabla \psi$ ')
+    plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), label=r'$\frac{1}{T} \left(1 - \exp(\sigma T)\right)$')
+    plt.xlabel('Real Part')
+    plt.ylabel('Imaginary Part')
+    plt.grid(visible=True, which='major', axis='both')
+    plt.title('Timestepper Eigenvalues')
+    plt.legend()
+
+    plt.figure()
+    plt.scatter(np.real(f_eigvals), np.imag(f_eigvals), label=r'Eigenvalues $\sigma$ of $\nabla f$ ')
+    plt.xlabel('Real Part')
+    plt.ylabel('Imaginary Part')
+    plt.grid(visible=True, which='major', axis='both')
+    plt.title('PDE Eigenvalues')
+    plt.legend()
+    plt.show()
+
+
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment', dest='experiment', nargs='?')
@@ -166,3 +247,5 @@ if __name__ == '__main__':
         plotFitzHughNagumoSolution()
     elif args.experiment == 'ss':
         findSteadyState()
+    elif args.experiment == 'arnoldi':
+        calculateEigenvalues()

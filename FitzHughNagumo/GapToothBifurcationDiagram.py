@@ -35,7 +35,7 @@ for i in range(n_teeth):
     x_patch_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
 # Time Discretization Parameters
-T_psi = 0.2
+T_psi = 1.0
 dt = 1.e-3
 T_patch = 10 * dt
 
@@ -152,7 +152,7 @@ def calculateBifurcationDiagram():
     print('Initial Point Found.\n')
 
     # Continuation Parameters
-    max_steps = 200
+    max_steps = 170
     ds_min = 1.e-6
     ds_max = 0.1
     ds = 0.001

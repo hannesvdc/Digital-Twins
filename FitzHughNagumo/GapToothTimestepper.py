@@ -64,6 +64,20 @@ def patchOneTimestep(u0, v0, x_array, L, n_teeth, dx, dt, T_patch, params, solve
     u_spline = BSpline.ClampedCubicSpline(x_spline_values, u_spline_values, left_bc=0.0, right_bc=L, solver=solver)
     v_spline = BSpline.ClampedCubicSpline(x_spline_values, v_spline_values, left_bc=0.0, right_bc=L, solver=solver)
 
+    # x_plot_array = np.linspace(0.0, L, 1001)
+    # plt.plot(x_plot_array, u_spline(x_plot_array), color='tab:green', linestyle='dashed', label='Spline Interpolation')
+    # plt.plot(x_plot_array, v_spline(x_plot_array), color='tab:red', linestyle='dashed')
+    # for patch in range(len(u0)):
+    #     if patch == 0:
+    #         plt.plot(x_array[patch], u0[patch], color='tab:blue', label=r'$u(x)$ Patches')
+    #         plt.plot(x_array[patch], v0[patch], color='tab:orange', label=r'$u(x)$ Patches')
+    #     else:
+    #         plt.plot(x_array[patch], u0[patch]+0.01, color='tab:blue')
+    #         plt.plot(x_array[patch], v0[patch]+0.01, color='tab:orange')
+    # plt.xlabel(r'$x$')
+    # plt.legend()
+    # plt.show()
+
     # For each tooth: calculate Neumann boundary conditions and simulate in that tooth
     return_u = []
     return_v = []

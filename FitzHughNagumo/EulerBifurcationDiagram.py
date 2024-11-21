@@ -116,7 +116,7 @@ def calculateBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 1900
+    max_steps = 1000
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001
@@ -147,8 +147,8 @@ def calculateBifurcationDiagram():
     # Plot both branches
     plot_x1_path = np.average(x1_path[:, 0:N], axis=1)
     plot_x2_path = np.average(x2_path[:, 0:N], axis=1)
-    plt.plot(eps1_path, plot_x1_path, color='blue', label='Branch 1')
-    plt.plot(eps2_path, plot_x2_path, color='red', label='Branch 2')
+    plt.plot(eps1_path, plot_x1_path, color='blue')
+    plt.plot(eps2_path, plot_x2_path, color='blue')
     plt.xlabel(r'$\varepsilon$')
     plt.ylabel(r'$<u>$')
     plt.show()

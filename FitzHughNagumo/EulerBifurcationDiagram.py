@@ -116,7 +116,7 @@ def calculateBifurcationDiagram():
     x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
 
     # Continuation Parameters
-    max_steps = 1000
+    max_steps = 1900
     ds_min = 1.e-6
     ds_max = 0.01
     ds = 0.001

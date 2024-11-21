@@ -222,7 +222,7 @@ def calculateEigenvalues():
     print('Done.')
 
     # Plot the Eigenvalues
-    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\nabla \psi$ ')
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\psi$ ')
     plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), label=r'$1 - \exp(\sigma T)$')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
@@ -231,7 +231,7 @@ def calculateEigenvalues():
     plt.legend()
 
     plt.figure()
-    plt.scatter(np.real(f_eigvals), np.imag(f_eigvals), label=r'Eigenvalues $\sigma$ of $\nabla f$ ')
+    plt.scatter(np.real(f_eigvals), np.imag(f_eigvals), label=r'Eigenvalues $\sigma$ of $f$ ')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')

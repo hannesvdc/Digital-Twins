@@ -1,8 +1,4 @@
 import numpy as np
-import numpy.linalg as lg
-import numpy.random as rd
-import scipy.sparse.linalg as slg
-import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'

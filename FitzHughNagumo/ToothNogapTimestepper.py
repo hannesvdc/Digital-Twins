@@ -272,6 +272,9 @@ def calculateEigenvalues():
     psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    np.save(directory + 'toothnogap_eigenvalues.npy', psi_eigvals)
+
     # Plot the eigenvalues in the complex plane
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals))
     plt.xlabel('Real Part')

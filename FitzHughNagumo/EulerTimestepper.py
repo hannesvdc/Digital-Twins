@@ -221,6 +221,9 @@ def calculateEigenvalues():
     psi_approx_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
     print('Done.')
 
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    np.save(directory + 'euler_eigenvalues.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
+
     # Plot the Eigenvalues
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\psi$ ')
     plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), label=r'$1 - \exp(\sigma T)$')

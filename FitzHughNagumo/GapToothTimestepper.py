@@ -98,7 +98,7 @@ def patchTimestepper(return_sol=False):
 
     # Domain parameters
     L = 20.0
-    n_teeth = 11
+    n_teeth = 100#11
     n_gaps = n_teeth - 1
     gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
@@ -127,8 +127,8 @@ def patchTimestepper(return_sol=False):
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 450.0
-    dt = 1.e-3
+    T = 100.0#450.0
+    dt =  1.e-5#1.e-3
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
@@ -146,17 +146,25 @@ def patchTimestepper(return_sol=False):
         return u_sol, v_sol
 
     # Euler Timestepping for Comparison
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+    print('Running the Euler method for comparison')
+    dt_euler = 1.e-3
+    N_euler = 200
+    dx_euler = L / N_euler
+    x_array_euler = np.linspace(0.0, L, N_euler)
+    u0_euler = sigmoid(x_array_euler, 6.0, -1, 1.0, 2.0)
+    v0_euler = sigmoid(x_array_euler, 10, 0.0, 2.0, 0.1)
+    u0_euler, v0_euler = fixInitialBCs(u0_euler, v0_euler)
+    u_euler, v_euler = fhn_euler_timestepper(u0_euler, v0_euler, dx_euler, dt_euler, T, params, verbose=False)
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
-    u_patch_euler = []
-    v_patch_euler = []
-    for i in range(n_teeth):
-        u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    z_patch_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
-    psi_val_euler = psiPatch(z_patch_euler, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
-    print('Psi Euler', lg.norm(psi_val_euler))
+    # u_patch_euler = []
+    # v_patch_euler = []
+    # for i in range(n_teeth):
+    #     u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    #     v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    # z_patch_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
+    # psi_val_euler = psiPatch(z_patch_euler, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
+    # print('Psi Euler', lg.norm(psi_val_euler))
 
     # Plot the solution at final time
     for i in range(n_teeth):
@@ -166,8 +174,8 @@ def patchTimestepper(return_sol=False):
         else:
             plt.plot(x_plot_array[i], u_sol[i], color='blue')
             plt.plot(x_plot_array[i], v_sol[i], color='orange')
-    plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
-    plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
+    plt.plot(x_array_euler, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
+    plt.plot(x_array_euler, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
     plt.show()
 

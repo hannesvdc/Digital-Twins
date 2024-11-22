@@ -1,3 +1,4 @@
+import numpy as np
 import matplotlib.pyplot as plt
 
 from  EulerTimestepper import findSteadyState as calc_ss_euler
@@ -16,6 +17,7 @@ x_gaptooth, U_ss_gaptooth, V_ss_gaptooth = calc_ss_gaptooth(return_ss=True)
 # Extract U and V for euler and the tooth-scheme
 N_euler = len(ss_euler) // 2
 U_euler, V_euler = ss_euler[0:N_euler], ss_euler[N_euler:]
+x_tooth = np.concatenate(x_tooth)
 N_tooth = len(ss_tooth) // 2
 U_tooth, V_tooth = ss_tooth[0:N_tooth], ss_tooth[N_tooth:]
 

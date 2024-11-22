@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.linalg as lg
 import scipy.optimize as opt
+import scipy.sparse.linalg as slg
 import matplotlib.pyplot as plt
 import argparse
 
@@ -217,9 +218,10 @@ def findSteadyStateNewtonGMRES(return_ss=False):
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
+    print('Steady - State Found!')
 
     if return_ss:
-        return np.concatenate(x_plot_array), z_ss
+        return x_plot_array, z_ss
 
     z_timestepper = patchTimestepper(plot=False)
 
@@ -238,6 +240,46 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     plt.legend()
     plt.show()
 
+def calculateEigenvalues():
+    BSpline.ClampedCubicSpline.lu_exists = False
+    
+    # Domain parameters
+    L = 20.0
+    n_teeth = 21
+    n_points_per_tooth = 10
+    N = n_teeth * n_points_per_tooth
+    dx = L / (N - 1)
+
+    # Model parameters
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
+
+    # Calculate steady - state
+    x_plot_array, z_ss = findSteadyStateNewtonGMRES(return_ss=True)
+
+    # Gap-Tooth Psi Function
+    print('\nCalculating Leading Eigenvalues using Arnoldi ...')
+    r_diff = 1.e-8
+    T_psi = 1.0
+    dt = 1.e-3
+    T_patch = 10 * dt
+    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
+    d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
+    D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
+    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
+    print('Done.')
+
+    # Plot the eigenvalues in the complex plane
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals))
+    plt.xlabel('Real Part')
+    plt.ylabel('Imaginary Part')
+    plt.grid(visible=True, which='major', axis='both')
+    plt.title('Tooth-No-Gap Timestepper Eigenvalues')
+    plt.show()
+
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment', dest='experiment', nargs='?')
@@ -251,3 +293,5 @@ if __name__ == '__main__':
         findSteadyStateNewtonGMRES()
     elif args.experiment == 'evolution':
         patchTimestepper()
+    elif args.experiment == 'arnoldi':
+        calculateEigenvalues()

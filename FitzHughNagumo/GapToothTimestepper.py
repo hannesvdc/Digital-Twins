@@ -247,6 +247,9 @@ def findSteadyStateNewtonGMRES():
         str_err = str_err[1:len(str_err)-1]
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
 
+    # Store the steady - state
+    np.save(directory + 'gaptooth_steady_state.npy', z_ss)
+
     # Convert the found steady-state to the gap-tooth datastructure and plot
     N_ss = len(z_ss) // 2
     u_ss = z_ss[0:N_ss]
@@ -256,10 +259,6 @@ def findSteadyStateNewtonGMRES():
     for i in range(n_teeth):
         u_patch_ss.append(u_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
         v_patch_ss.append(v_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
-    
-    # Store the steady - state
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-    np.save(directory + 'gaptooth_steady_state.npy', z_ss)
 
     for i in range(n_teeth):
         if i == 0:

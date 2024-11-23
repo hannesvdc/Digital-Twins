@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 import argparse
 
+directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
 
@@ -108,6 +110,9 @@ def plotFitzHughNagumoSolution():
             u_solution[n // 10, :] = u
             v_solution[n // 10, :] = v
 
+    # Store the time-evolution steady - state
+    np.save(directory + 'euler_evolution_T=' + str(T) + '.npy', np.vstack((x_array, u, v)))
+
     # Plotting the final result
     x_plot_array = np.linspace(0.0, T, u_solution.shape[1]+1)
     t_plot_array = np.linspace(0.0, T, u_solution.shape[0]+1)
@@ -134,7 +139,7 @@ def plotFitzHughNagumoSolution():
     plt.title(r'$v(x, t)$')
     plt.show()
 
-def findSteadyState(return_ss=False):
+def findSteadyState():
     # Method parameters
     L = 20.0
     N = 200
@@ -146,7 +151,7 @@ def findSteadyState(return_ss=False):
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
-    eps = 0.1 # eps = 0.01 is unstable (oscillatory) beyond the Hopf bifurcation. Doing stable for now.
+    eps = 0.1
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     x_array = np.linspace(0.0, L, N)
@@ -162,23 +167,21 @@ def findSteadyState(return_ss=False):
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
         x_ss = np.fromstring(str_err, dtype=float, sep=' ')
-
-    if return_ss:
-        return x_array, x_ss
-    
-    # Also do Euler Timestepping for comparison
-    u_euler = np.copy(u0)
-    v_euler = np.copy(v0)
-    for n in range(int(450.0 / dt)):
-        u_euler, v_euler = fhn_euler(u_euler, v_euler, dx, dt, params)
-
     u_ss = x_ss[0:N]
     v_ss = x_ss[N:]
-    x_array = np.linspace(0.0, L, N)
+
+    # Store the computed steady state in a file
+    np.save(directory + 'euler_steady_state.npy', np.vstack((x_array, u_ss, v_ss)))
+    
+    # Also load the Euler Time Evolution Steady State for comparison
+    z_euler = np.load(directory + 'euler_evolution_T=' + str(450.0) + '.npy')
+    u_euler = z_euler[1,:]
+    v_euler = z_euler[2,:]
+
     plt.plot(x_array, u_ss, linestyle='dashed', label=r'Newton-GMRES $u(x)$')
     plt.plot(x_array, v_ss, linestyle='dashed', label=r'Newton-GMRES $v(x)$')
-    plt.plot(x_array, u_euler+0.005, linestyle='dashdot', label=r'Euler Method $u(x)$')
-    plt.plot(x_array, v_euler+0.005, linestyle='dashdot', label=r'Euler Method $v(x)$')
+    plt.plot(x_array, u_euler, linestyle='dotted', label=r'Euler Method $u(x)$')
+    plt.plot(x_array, v_euler, linestyle='dotted', label=r'Euler Method $v(x)$')
     plt.xlabel(r'$x$')
     plt.legend()
     plt.show()
@@ -199,8 +202,11 @@ def calculateEigenvalues():
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     # Do time-evolution to get the steady-state
-    print('Calculating the Steady State ...')
-    _, z_ss = findSteadyState(return_ss=True)
+    print('Loading the Steady State ...')
+    ss_data = np.load(directory + 'euler_steady_state.npy')
+    u_ss = ss_data[1,:]
+    v_ss = ss_data[2,:]
+    z_ss = np.concatenate((u_ss, v_ss))
     f_int = lambda z: f_wrapper(z, N, dx, params)
     z_f_ss = opt.newton_krylov(f_int, z_ss, f_tol=1.e-13)
     print('Done.')
@@ -221,7 +227,6 @@ def calculateEigenvalues():
     psi_approx_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
     print('Done.')
 
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     np.save(directory + 'euler_eigenvalues.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
 
     # Plot the Eigenvalues

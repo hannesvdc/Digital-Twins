@@ -19,7 +19,7 @@ params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0}
 
 # Domain parameters
 L = 20.0
-n_teeth = 11
+n_teeth = 100
 n_gaps = n_teeth - 1
 gap_over_tooth_size_ratio = 1
 n_points_per_tooth = 11
@@ -36,13 +36,13 @@ for i in range(n_teeth):
 
 # Time Discretization Parameters
 T_psi = 0.2
-dt = 1.e-3
+dt = 1.e-5
 T_patch = 10 * dt
 
 # z = (u. v) on a fixed grid
 def G(z, eps):
     params['eps'] = eps
-    return psiPatch(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='direct') 
+    return psiPatch(z, x_patch_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct', verbose=False) 
 
 def dGdz_w(z, w, eps):
     rdiff = 1.e-8
@@ -140,7 +140,7 @@ def calculateBifurcationDiagram():
     print('Calcuating Initial Point on the Bifurcation Diagram ...')
     u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
     v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
-    u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
+    #u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
     u_patch_0 = []
     v_patch_0 = []
     for i in range(n_teeth):

@@ -127,8 +127,8 @@ def patchTimestepper(return_sol=False):
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
 
     # Gap-Tooth Timestepping 
-    T = 100.0#450.0
-    dt =  1.e-5#1.e-3
+    T = 100.0
+    dt = 1.e-5 #for n_teeth=100
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
@@ -136,14 +136,14 @@ def patchTimestepper(return_sol=False):
             print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
 
+    if return_sol:
+        return u_sol, v_sol
+
     # Calculate the psi - value of the GapTooth scheme
     T_psi = 1.0
     z_sol = np.concatenate((np.concatenate(u_sol), np.concatenate(v_sol)))
     psi_val = psiPatch(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Gap-Tooth', lg.norm(psi_val))
-
-    if return_sol:
-        return u_sol, v_sol
 
     # Euler Timestepping for Comparison
     print('Running the Euler method for comparison')
@@ -179,7 +179,7 @@ def patchTimestepper(return_sol=False):
     plt.legend()
     plt.show()
 
-def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct'):
+def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
 
@@ -194,7 +194,9 @@ def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_dir
 
     # Do time-evolution over an interval of size T.
     n_steps = int(T / T_patch)
-    for _ in range(n_steps):
+    for k in range(n_steps):
+        if verbose:
+            print(k*T_patch)
         u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params, solver=solver)
 
     # Convert patches datastructure back to a single numpy array
@@ -210,7 +212,7 @@ def findSteadyStateNewtonGMRES(return_ss=False):
 
     # Domain parameters
     L = 20.0
-    n_teeth = 11
+    n_teeth = 100
     n_gaps = n_teeth - 1
     gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
@@ -225,36 +227,28 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     eps = 0.1
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
-    # Initial condition - divide over all teeth
-    x_array = np.linspace(0.0, L, N)
-    x_plot_array = []
-    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
-    u0, v0 = fixInitialBCs(u0, v0)
-
-    # Run the Euler scheme for a decent initial condition, and convert to patch datastructure
-    T = 100.0
-    dt = 1.e-3
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+    # Run the Gap-Tooth scheme for a decent initial condition, and convert to patch datastructure
+    #u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+    u_gt, v_gt = patchTimestepper(return_sol=True)
+    z_gt = np.concatenate((np.concatenate(u_gt), np.concatenate(v_gt)))
+    print('Steady - State simulation done')
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
+    dt = 1.e-5
     T_psi = 1.0
     T_patch = 10 * dt
-    u_patch_euler = []
-    v_patch_euler = []
+    x_array = np.linspace(0.0, L, N)
+    x_plot_array = []
     for i in range(n_teeth):
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        u_patch_euler.append(u_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        v_patch_euler.append(v_euler[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    z_euler = np.concatenate((np.concatenate(u_patch_euler), np.concatenate(v_patch_euler)))
     psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
-    print('Psi Euler', lg.norm(psi(z_euler)))
+    print('Initial Gap-Tooth Psi', lg.norm(psi(z_gt)))
 
     # Do Newton - GMRES to find psi(z) = 0 
     tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
     try:
-        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', callback=cb, maxiter=200)
+        z_ss = opt.newton_krylov(psi, z_gt, f_tol=tolerance, method='gmres', callback=cb, maxiter=200, verbose=True)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
@@ -272,21 +266,22 @@ def findSteadyStateNewtonGMRES(return_ss=False):
 
     if return_ss:
         return x_plot_array, u_patch_ss, v_patch_ss
-
-    # Compare the steady - state to the gap-tooth timestepper
-    u_ts, v_ts = patchTimestepper(return_sol=True)
     
+    # Store the steady - state
+    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+    np.save(directory + 'gaptooth_ss.npy', z_ss)
+
     for i in range(n_teeth):
         if i == 0:
             plt.plot(x_plot_array[i], u_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $u(x)$', color='blue')
             plt.plot(x_plot_array[i], v_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $v(x)$', color='orange')
-            plt.plot(x_plot_array[i], u_ts[i], linestyle='dotted', label=r'Gap-Tooth $u(x)$', color='green')
-            plt.plot(x_plot_array[i], v_ts[i], linestyle='dotted', label=r'Gap-Tooth $v(x)$', color='red')
+            plt.plot(x_plot_array[i], u_gt[i], linestyle='dotted', label=r'Gap-Tooth $u(x)$', color='green')
+            plt.plot(x_plot_array[i], v_gt[i], linestyle='dotted', label=r'Gap-Tooth $v(x)$', color='red')
         else:
             plt.plot(x_plot_array[i], u_patch_ss[i], color='blue')
             plt.plot(x_plot_array[i], v_patch_ss[i], color='orange')
-            plt.plot(x_plot_array[i], u_ts[i], linestyle='dotted', color='green')
-            plt.plot(x_plot_array[i], v_ts[i], linestyle='dotted', color='red')
+            plt.plot(x_plot_array[i], u_gt[i], linestyle='dotted', color='green')
+            plt.plot(x_plot_array[i], v_gt[i], linestyle='dotted', color='red')
     plt.title('Steady-State Gap-Tooth')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$u, v$', rotation=0)

@@ -143,7 +143,7 @@ def calculateBifurcationDiagram():
     x2_path = np.array(x2_path)
     eps1_path = np.array(eps1_path)
     eps2_path = np.array(eps2_path)
-    np.save(directory + 'bf_diagram.npy', np.hstack((x1_path, eps1_path[:,np.newaxis], x2_path, eps2_path[:,np.newaxis])))
+    np.save(directory + 'euler_bf_diagram.npy', np.hstack((x1_path, eps1_path[:,np.newaxis], x2_path, eps2_path[:,np.newaxis])))
 
     # Plot both branches
     plot_x1_path = np.average(x1_path[:, 0:N], axis=1)
@@ -163,7 +163,7 @@ def calculateEigenvaluesArnoldi():
     M = 2 * N
     tolerance = 1.e-8
 
-    bf_data = np.load(directory + 'bf_diagram.npy')
+    bf_data = np.load(directory + 'euler_bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]
     x2_data = bf_data[:, M+1 : 2*M+1]
@@ -225,7 +225,7 @@ def calculateEigenvaluesArnoldiScipy():
     M = 2 * N
     tolerance = 1.e-6
 
-    bf_data = np.load(directory + 'bf_diagram.npy')
+    bf_data = np.load(directory + 'euler_bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]
     x2_data = bf_data[:, M+1 : 2*M+1]
@@ -283,7 +283,7 @@ These are the eigenvalues of the timestepper, not of the right-hand side of the 
 def calculateEigenvaluesQR():
     M = 2 * N
 
-    bf_data = np.load(directory + 'bf_diagram.npy')
+    bf_data = np.load(directory + 'euler_bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]
     x2_data = bf_data[:, M+1 : 2*M+1]

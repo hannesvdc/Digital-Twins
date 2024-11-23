@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-euler_bf_file = 'bf_diagram.npy'
-gaptooth_bf_file = 'toothnogap_bf_diagram.npy'
+euler_bf_file = 'euler_bf_diagram.npy'
+gaptooth_bf_file = 'tooth_no_gap_bf_diagram.npy'
 
 is_sorted = lambda a: np.all(a[:-1] <= a[1:])
 

@@ -8,6 +8,8 @@ import argparse
 import BSpline
 from EulerTimestepper import fhn_euler_timestepper
 
+directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
 
@@ -107,7 +109,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='k
     # Return the psi - function
     return (z0 - z_new) / T
 
-def patchTimestepper(plot=True):
+def patchTimestepper():
     BSpline.ClampedCubicSpline.lu_exists = False
 
     # Domain parameters
@@ -153,11 +155,14 @@ def patchTimestepper(plot=True):
     psi_val = psiPatchNogap(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('psi', lg.norm(psi_val), np.max(np.abs(psi_val)))
 
-    if plot is False:
-        return z_sol
+    # Store the tooth-no-gap solution to file
+    np.save(directory + 'tooth_no_gap_evolution_T='+str(T)+'.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
 
-    # Euler Timestepping for Comparison
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, T, params, verbose=False)
+    # Load the Euler Time Evolution for Comparison
+    data_euler = np.load(directory + 'euler_evolution_T='+str(T)+'.npy')
+    x_euler = data_euler[0,:]
+    u_euler = data_euler[1,:]
+    v_euler = data_euler[2,:]
 
     # Plot the solution at final time
     for i in range(n_teeth):
@@ -167,12 +172,12 @@ def patchTimestepper(plot=True):
         else:
             plt.plot(x_plot_array[i], u_sol[i], color='blue')
             plt.plot(x_plot_array[i], v_sol[i], color='orange')
-    plt.plot(x_array, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
-    plt.plot(x_array, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
+    plt.plot(x_euler, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
+    plt.plot(x_euler, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
     plt.show()
 
-def findSteadyStateNewtonGMRES(return_ss=False):
+def findSteadyStateNewtonGMRES():
     BSpline.ClampedCubicSpline.lu_exists = False
     
     # Domain parameters
@@ -189,12 +194,14 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     eps = 0.1
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
-    # Initial condition - divide over all teeth
-    x_array = np.linspace(0.0, L, N)
+    # Load the Tooth-No-Gap Time Evolution Steady State as a good initial condition
+    print('Loading Initial Condition from File ...')
+    gt_data = np.load(directory + 'tooth_no_gap_evolution_T='+str(450.0)+'.npy')
+    x_array = gt_data[0,:]
+    u0 = gt_data[1,:]
+    v0 = gt_data[2,:]
+    z0 = np.concatenate((u0, v0))
     x_plot_array = []
-    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
-    u0, v0 = fixInitialBCs(u0, v0)
     for i in range(n_teeth):
         x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
     
@@ -204,34 +211,25 @@ def findSteadyStateNewtonGMRES(return_ss=False):
     T_patch = 10 * dt
     psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
 
-    # Do Euler timestepping and calculate psi(euler steady - state) for a good initial condition
-    u_euler, v_euler = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
-    z_euler = np.concatenate((u_euler, v_euler))
-    print('Psi Euler', lg.norm(psi(z_euler)))
-
     # Do Newton - GMRES to find psi(z) = 0 
     tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
     try:
-        z_ss = opt.newton_krylov(psi, z_euler, f_tol=tolerance, method='gmres', callback=cb, maxiter=200)
+        z_ss = opt.newton_krylov(psi, z0, f_tol=tolerance, method='gmres', callback=cb, maxiter=200, verbose=True)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
-    print('Steady - State Found!')
-
-    if return_ss:
-        return x_plot_array, z_ss
-
-    z_timestepper = patchTimestepper(plot=False)
-
-    # Plot the steady-state
     u_ss = z_ss[0:N]
     v_ss = z_ss[N:]
-    u_ts = z_timestepper[0:N]
-    v_ts = z_timestepper[N:]
-    plt.plot(x_array, u_ts, linestyle='dashed', label=r'Time Evolution $u(x)$')
-    plt.plot(x_array, v_ts, linestyle='dashed', label=r'Time Evolution $v(x)$')
+    print('Steady - State Found!')
+
+    # Save the steady state to file
+    np.save(directory + 'tooth_no_gap_steady_state.npy', np.vstack((x_array, u_ss, v_ss)))
+
+    # Plot the steady-state
+    plt.plot(x_array, u0, linestyle='dashed', label=r'Time Evolution $u(x)$')
+    plt.plot(x_array, v0, linestyle='dashed', label=r'Time Evolution $v(x)$')
     plt.plot(x_array, u_ss, linestyle='dotted', label=r'Newton - GMRES $u(x)$')
     plt.plot(x_array, v_ss, linestyle='dotted', label=r'Newton - GMRES $v(x)$')
     plt.title('Steady - State Patches without Gaps')
@@ -257,8 +255,16 @@ def calculateEigenvalues():
     eps = 0.1
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
-    # Calculate steady - state
-    x_plot_array, z_ss = findSteadyStateNewtonGMRES(return_ss=True)
+    # Load the steady - state from file
+    print('\nLoading the Steady State from File ...')
+    ss_data = np.load(directory + 'tooth_no_gap_steady_state.npy')
+    x_array = ss_data[0,:]
+    u_ss = ss_data[1,:]
+    v_ss = ss_data[2,:]
+    z_ss = np.concatenate((u_ss, v_ss))
+    x_plot_array = []
+    for i in range(n_teeth):
+        x_plot_array.append(x_array[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
     # Gap-Tooth Psi Function
     print('\nCalculating Leading Eigenvalues using Arnoldi ...')
@@ -272,8 +278,8 @@ def calculateEigenvalues():
     psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-    np.save(directory + 'toothnogap_eigenvalues.npy', psi_eigvals)
+    # Save the eigenvalues to file
+    np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
 
     # Plot the eigenvalues in the complex plane
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals))

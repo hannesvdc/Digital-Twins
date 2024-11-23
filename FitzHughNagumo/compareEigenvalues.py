@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
 euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
-toothnogap_eigvals = np.load(directory + 'toothnogap_eigenvalues.npy')
+toothnogap_eigvals = np.load(directory + 'tooth_no_gap_eigenvalues.npy')
 
 # Load components
 euler_psi = euler_eigvals[0,:]

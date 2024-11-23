@@ -17,6 +17,8 @@ dt = 0.001
 T = 1.0
 params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0, 'eps': 0.0}
 
+directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+
 def G(x, eps):
     params['eps'] = eps
     return psi(x, T, dx, dt, params)
@@ -109,13 +111,13 @@ def calculateBifurcationDiagram():
     v0 = sigmoid(x_array, 15, 0.0, 2.0, 0.1)
     x0 = np.concatenate((u0, v0))
 
-    # Calculate a good initial condition x0 on the path
-    M = 2 * N
-    tolerance = 1.e-6
-    F = lambda x: G(x, eps0)
-    x0 = opt.newton_krylov(F, x0, rdiff=1.e-8, f_tol=tolerance)
+    # Load the steady - state for eps = 0.1 from file
+    x0_data = np.load(directory + 'euler_steady_state.npy')
+    x0 = np.concatenate((x0_data[1,:], x0_data[2,:]))
 
     # Continuation Parameters
+    M = 2 * N
+    tolerance = 1.e-6
     max_steps = 1900
     ds_min = 1.e-6
     ds_max = 0.01
@@ -141,7 +143,6 @@ def calculateBifurcationDiagram():
     x2_path = np.array(x2_path)
     eps1_path = np.array(eps1_path)
     eps2_path = np.array(eps2_path)
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     np.save(directory + 'bf_diagram.npy', np.hstack((x1_path, eps1_path[:,np.newaxis], x2_path, eps2_path[:,np.newaxis])))
 
     # Plot both branches
@@ -162,7 +163,6 @@ def calculateEigenvaluesArnoldi():
     M = 2 * N
     tolerance = 1.e-8
 
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]
@@ -225,7 +225,6 @@ def calculateEigenvaluesArnoldiScipy():
     M = 2 * N
     tolerance = 1.e-6
 
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]
@@ -284,7 +283,6 @@ These are the eigenvalues of the timestepper, not of the right-hand side of the 
 def calculateEigenvaluesQR():
     M = 2 * N
 
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     bf_data = np.load(directory + 'bf_diagram.npy')
     x1_data = bf_data[:,0:M]
     eps1_data = bf_data[:, M]

@@ -1,12 +1,16 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from  EulerTimestepper import findSteadyState as calc_ss_euler
 from ToothNoGapTimestepper import findSteadyStateNewtonGMRES as calc_ss_tooth
 from GapToothTimestepper import findSteadyStateNewtonGMRES as calc_ss_gaptooth
 
-print('\nCalculating Steady-State of the Euler Scheme')
-x_euler, ss_euler = calc_ss_euler(return_ss=True)
+directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+
+print('\nLoading Steady-State of the Euler Scheme ...')
+euler_data = np.load(directory + 'euler_steady_state.npy')
+x_euler = euler_data[0,:]
+U_euler = euler_data[1,:]
+V_euler = euler_data[2,:]
 
 print('\nCalculating Steady-State of the Tooth-No-Gap Scheme')
 x_tooth, ss_tooth = calc_ss_tooth(return_ss=True)
@@ -15,8 +19,6 @@ print('\nCalculating Steady-State of the Gap-Tooth Scheme')
 x_gaptooth, U_ss_gaptooth, V_ss_gaptooth = calc_ss_gaptooth(return_ss=True)
 
 # Extract U and V for euler and the tooth-scheme
-N_euler = len(ss_euler) // 2
-U_euler, V_euler = ss_euler[0:N_euler], ss_euler[N_euler:]
 x_tooth = np.concatenate(x_tooth)
 N_tooth = len(ss_tooth) // 2
 U_tooth, V_tooth = ss_tooth[0:N_tooth], ss_tooth[N_tooth:]

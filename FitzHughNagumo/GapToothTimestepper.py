@@ -237,40 +237,42 @@ def findSteadyStateNewtonGMRES():
     print('Initial Gap-Tooth Psi', lg.norm(psi(z_gt)))
 
     # Do Newton - GMRES to find psi(z) = 0
+    print('\nCalculating Steady State via Newton-GMRES ...')
     tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
     try:
-        print('\nCalculating Steady State via Newton-GMRES ...')
         z_ss = opt.newton_krylov(psi, z_gt, f_tol=tolerance, method='gmres', callback=cb, maxiter=200, verbose=True)
     except opt.NoConvergence as err:
         str_err = str(err)
         str_err = str_err[1:len(str_err)-1]
         z_ss = np.fromstring(str_err, dtype=float, sep=' ')
-
-    # Store the steady - state
-    np.save(directory + 'gaptooth_steady_state.npy', z_ss)
-
-    # Convert the found steady-state to the gap-tooth datastructure and plot
     N_ss = len(z_ss) // 2
     u_ss = z_ss[0:N_ss]
     v_ss = z_ss[N_ss:]
+
+    # Store the steady - state
+    np.save(directory + 'gaptooth_steady_state.npy', np.vstack((np.concatenate(x_plot_array), u_ss, v_ss)))
+
+    # Convert the found steady-state to the gap-tooth datastructure and plot
     u_patch_ss = []
     v_patch_ss = []
+    u_patch_gt = []
+    v_patch_gt = []
     for i in range(n_teeth):
         u_patch_ss.append(u_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
         v_patch_ss.append(v_ss[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+        u_patch_gt.append(u_gt[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
+        v_patch_gt.append(v_gt[i * n_points_per_tooth : (i+1) * n_points_per_tooth])
 
-    for i in range(n_teeth):
-        if i == 0:
-            plt.plot(x_plot_array[i], u_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $u(x)$', color='blue')
-            plt.plot(x_plot_array[i], v_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $v(x)$', color='orange')
-            plt.plot(x_plot_array[i], u_gt[i], linestyle='dotted', label=r'Gap-Tooth $u(x)$', color='green')
-            plt.plot(x_plot_array[i], v_gt[i], linestyle='dotted', label=r'Gap-Tooth $v(x)$', color='red')
-        else:
-            plt.plot(x_plot_array[i], u_patch_ss[i], color='blue')
-            plt.plot(x_plot_array[i], v_patch_ss[i], color='orange')
-            plt.plot(x_plot_array[i], u_gt[i], linestyle='dotted', color='green')
-            plt.plot(x_plot_array[i], v_gt[i], linestyle='dotted', color='red')
+    plt.plot(x_plot_array[i], u_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $u(x)$', color='blue')
+    plt.plot(x_plot_array[i], v_patch_ss[i], linestyle='dashdot', label=r'Newton - GMRES $v(x)$', color='orange')
+    plt.plot(x_plot_array[i], u_patch_gt[i], linestyle='dotted', label=r'Gap-Tooth $u(x)$', color='green')
+    plt.plot(x_plot_array[i], v_patch_gt[i], linestyle='dotted', label=r'Gap-Tooth $v(x)$', color='red')
+    for i in range(1, n_teeth):
+        plt.plot(x_plot_array[i], u_patch_ss[i], color='blue')
+        plt.plot(x_plot_array[i], v_patch_ss[i], color='orange')
+        plt.plot(x_plot_array[i], u_patch_gt[i], linestyle='dotted', color='green')
+        plt.plot(x_plot_array[i], v_patch_gt[i], linestyle='dotted', color='red')
     plt.title('Steady-State Gap-Tooth')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$u, v$', rotation=0)

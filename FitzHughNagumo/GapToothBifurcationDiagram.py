@@ -11,6 +11,8 @@ BSpline.ClampedCubicSpline.lu_exists = False
 from GapToothTimestepper import psiPatch, sigmoid
 from EulerTimestepper import fhn_euler_timestepper
 
+directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+
 # Model Parameters
 a0 = -0.03
 a1 = 2.0
@@ -133,22 +135,26 @@ def calculateBifurcationDiagram():
     params['eps'] = eps0
     M = 2 * N
     tolerance = 1.e-6
-    F = lambda z: G(z, eps0)
+    #F = lambda z: G(z, eps0)
 
     # Calculate a good initial condition z0 on the path by first running an Euler timestepper
     # with a sigmoid initial and then calling Newton-Krylov
-    print('Calcuating Initial Point on the Bifurcation Diagram ...')
-    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
+    print('Loading Initial Point on the Bifurcation Diagram ...')
+    gt_ss = np.load(directory + 'gaptooth_steady_state.npy')
+    u_ss = gt_ss[1,:]
+    v_ss = gt_ss[2,:]
+    z0 = np.concatenate((u_ss, v_ss))
+    #u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
+    #v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
     #u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
-    u_patch_0 = []
-    v_patch_0 = []
-    for i in range(n_teeth):
-        u_patch_0.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        v_patch_0.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    z0 = np.concatenate((np.concatenate(u_patch_0), np.concatenate(v_patch_0))) # Should be a single array
+    #u_patch_0 = []
+    #v_patch_0 = []
+    #for i in range(n_teeth):
+    #    u_patch_0.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    #    v_patch_0.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+    #z0 = np.concatenate((np.concatenate(u_patch_0), np.concatenate(v_patch_0))) # Should be a single array
     print('Type z0', type(z0), len(z0))
-    z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance, verbose=True)
+    #z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance, verbose=True)
     print('Initial Point Found.\n')
 
     # Continuation Parameters
@@ -162,6 +168,7 @@ def calculateBifurcationDiagram():
     random_tangent = rng.normal(0.0, 1.0, M+1)
     initial_tangent = computeTangent(lambda v: dGdz_w(z0, v, eps0), dGdeps(z0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
+    print('Initial Tangent Found')
 
     # Do actual numerical continuation in both directions
     print('Runnning Pseudo-Arclength Continuation ...')
@@ -178,7 +185,6 @@ def calculateBifurcationDiagram():
     z2_path = np.array(z2_path)
     eps1_path = np.array(eps1_path)
     eps2_path = np.array(eps2_path)
-    directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
     np.save(directory + 'gaptooth_bf_diagram.npy', np.hstack((z1_path, eps1_path[:,np.newaxis], z2_path, eps2_path[:,np.newaxis])))
 
     # Plot both branches

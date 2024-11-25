@@ -100,7 +100,7 @@ def patchTimestepper():
 
     # Domain parameters
     L = 20.0
-    n_teeth = 100
+    n_teeth = 30#100
     n_gaps = n_teeth - 1
     gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
@@ -130,7 +130,7 @@ def patchTimestepper():
 
     # Gap-Tooth Timestepping 
     T = 200.0
-    dt = 1.e-5
+    dt = 1.e-4 # 1.e-5 for n_teeth=100
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     for k in range(n_patch_steps):
@@ -139,7 +139,7 @@ def patchTimestepper():
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
 
     # Store the steady - state
-    np.save(directory + 'gaptooth_evolution_T=' + str(T) + '.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
+    np.save(directory + 'gaptooth_evolution_nteeth='+str(n_teeth) + '_T=' + str(T) + '.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
 
     # Calculate the psi - value of the GapTooth scheme
     T_psi = 1.0

@@ -52,7 +52,7 @@ def timeSimulation(u0, v0, dx, dt, T, dT, params):
         u, v = fhn_euler_timestepper(u, v, dx, dt, dT, params, verbose=False)
         solution_slices[i,:] = np.concatenate((u, v))
 
-    return solution_slices[2:,:] # Ignore t=0 and t=1
+    return solution_slices[2:,:] # Ignore t=0 and t=1 seconds
 
 def evolveTrajectories():
     a0 = -0.03

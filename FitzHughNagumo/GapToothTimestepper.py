@@ -223,15 +223,15 @@ def findSteadyStateNewtonGMRES():
 
     # Load the Gap-Tooth Steady State from Time Evolution and use it as initial condition
     print('Loading Initial Condition from File ...')
-
     gt_data = np.load(directory + 'gaptooth_evolution_T=' + str(200.0) + '.npy')
     u_gt = gt_data[1,:]
     v_gt = gt_data[2,:]
     z_gt = np.concatenate((u_gt, v_gt))
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
+    print('\nCalculating Initial Psi Value ...')
     dt = 1.e-5
-    T_psi = 1.0
+    T_psi = 0.2
     T_patch = 10 * dt
     psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Initial Gap-Tooth Psi', lg.norm(psi(z_gt)))
@@ -240,7 +240,7 @@ def findSteadyStateNewtonGMRES():
     tolerance = 1.e-14
     cb = lambda x, f: print(lg.norm(f))
     try:
-        print('Calculating Steady State via Newton-GMRES ...')
+        print('\nCalculating Steady State via Newton-GMRES ...')
         z_ss = opt.newton_krylov(psi, z_gt, f_tol=tolerance, method='gmres', callback=cb, maxiter=200, verbose=True)
     except opt.NoConvergence as err:
         str_err = str(err)

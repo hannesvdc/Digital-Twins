@@ -1,10 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+def toNumericString(n):
+    return str(n).replace('.', 'p')
+
+T_psi = 1.0
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
-toothnogap_eigvals = np.load(directory + 'tooth_no_gap_eigenvalues.npy')
-gaptooth_eigvals = np.load(directory + 'gaptooth_eigenvalues.npy')
+euler_eigvals = np.load(directory + 'euler_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
+toothnogap_eigvals = np.load(directory + 'tooth_no_gap_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
+gaptooth_eigvals = np.load(directory + 'gaptooth_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
 
 # Load components
 euler_psi = euler_eigvals[0,:]

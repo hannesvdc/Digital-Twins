@@ -323,17 +323,18 @@ def calculateEigenvalues():
     # Gap-Tooth Psi Function
     print('\nCalculating Leading Eigenvalues using Arnoldi ...')
     r_diff = 1.e-8
-    T_psi = 1.0 # For proper comparison with Euler
+    T_psi = 0.2
     dt = 1.e-4
     T_patch = 10 * dt
-    psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct', countEvalutions=True)
+    psi = lambda z: T_psi * psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct', countEvalutions=True)
     d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
     psi_eigvals = slg.eigs(D_psi, 2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
     # Save the eigenvalues to file
-    np.save(directory + 'gaptooth_eigenvalues.npy', psi_eigvals)
+    toNumericString = lambda number: str(number).replace('.', 'p')
+    np.save(directory + 'gaptooth_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', psi_eigvals)
 
     # Compare the eigenvalues to those of the Euler Timestepper.
     euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')

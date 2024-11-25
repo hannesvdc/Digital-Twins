@@ -8,8 +8,7 @@ import matplotlib.pyplot as plt
 import BSpline
 BSpline.ClampedCubicSpline.lu_exists = False
 
-from GapToothTimestepper import psiPatch, sigmoid
-from EulerTimestepper import fhn_euler_timestepper
+from GapToothTimestepper import psiPatch
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
 
@@ -135,10 +134,8 @@ def calculateBifurcationDiagram():
     params['eps'] = eps0
     M = 2 * N
     tolerance = 1.e-6
-    #F = lambda z: G(z, eps0)
 
-    # Calculate a good initial condition z0 on the path by first running an Euler timestepper
-    # with a sigmoid initial and then calling Newton-Krylov
+    # Load the steady state as initial point on the bf diagram
     print('Loading Initial Point on the Bifurcation Diagram ...')
     gt_ss = np.load(directory + 'gaptooth_steady_state.npy')
     u_ss = gt_ss[1,:]

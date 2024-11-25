@@ -279,10 +279,9 @@ def calculateEigenvalues():
     print('Done.')
 
     # Save the eigenvalues to file
-    #np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
+    np.save(directory + 'gaptooth_eigenvalues.npy', psi_eigvals)
 
-    # Calculate the eigenvalues of the right-hand side PDE in the grid points as well
-    # Use those stored on file as an approximation
+    # Compare these eigenvalues with the Euler timestepper
     euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
     f_eigvals = euler_eigvals[1,:]
     approx_psi_eigvals = 1.0 - np.exp(f_eigvals * T_psi)

@@ -286,14 +286,15 @@ def calculateEigenvalues():
 
     # Setup the Domain and its Parameters
     L = 20.0
-    n_teeth = 100
+    n_teeth = 30
     n_gaps = n_teeth - 1
     gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
     n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
-    N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
-    dx = L / (N - 1)
-    x_array = np.linspace(0.0, L, N)
+    N_all = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
+    N = n_teeth * n_points_per_tooth
+    dx = L / (N_all - 1)
+    x_array = np.linspace(0.0, L, N_all)
     x_plot_array = []
     for i in range(n_teeth):
         x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
@@ -307,7 +308,7 @@ def calculateEigenvalues():
 
     # Load the Gap-Tooth Steady State from Time Evolution and use it as initial condition
     print('Loading Steady State from File ...')
-    ss_data = np.load(directory + 'gaptooth_evolution_T=' + str(200.0) + '.npy')
+    ss_data = np.load(directory + 'gaptooth_steady_state.npy')
     u_ss = ss_data[1,:]
     v_ss = ss_data[2,:]
     z_ss = np.concatenate((u_ss, v_ss))
@@ -315,13 +316,13 @@ def calculateEigenvalues():
     # Gap-Tooth Psi Function
     print('\nCalculating Leading Eigenvalues using Arnoldi ...')
     r_diff = 1.e-8
-    T_psi = 0.2
-    dt = 1.e-3
+    T_psi = 1.0 # For comparison with Euler
+    dt = 1.e-4
     T_patch = 10 * dt
     psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
     d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
-    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
+    psi_eigvals = slg.eigs(D_psi, 2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
     # Save the eigenvalues to file
@@ -335,7 +336,7 @@ def calculateEigenvalues():
 
     # Plot the eigenvalues in the complex plane
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label='Timestepper Eigenvalues')
-    plt.scatter(np.real(euler_eigvals), np.imag(euler_eigvals), label=r'Euler Timestepper Eigenvalues')
+    plt.scatter(np.real(euler_eigvals), np.imag(euler_eigvals), label='Euler Timestepper Eigenvalues')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')
@@ -357,5 +358,7 @@ if __name__ == '__main__':
         findSteadyStateNewtonGMRES()
     elif args.experiment == 'evolution':
         patchTimestepper()
+    elif args.experiment == 'arnoldi':
+        calculateEigenvalues()
     else:
         print('Select either --experiment ss or --experiment evolution')

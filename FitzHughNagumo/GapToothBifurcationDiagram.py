@@ -21,7 +21,7 @@ params = {'delta': 4.0, 'a0': -0.03, 'a1': 2.0}
 
 # Domain parameters
 L = 20.0
-n_teeth = 100
+n_teeth = 30
 n_gaps = n_teeth - 1
 gap_over_tooth_size_ratio = 1
 n_points_per_tooth = 11
@@ -38,7 +38,7 @@ for i in range(n_teeth):
 
 # Time Discretization Parameters
 T_psi = 0.2
-dt = 1.e-5
+dt = 1.e-4
 T_patch = 10 * dt
 
 # z = (u. v) on a fixed grid
@@ -144,17 +144,6 @@ def calculateBifurcationDiagram():
     u_ss = gt_ss[1,:]
     v_ss = gt_ss[2,:]
     z0 = np.concatenate((u_ss, v_ss))
-    #u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    #v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
-    #u0, v0 = fhn_euler_timestepper(u0, v0, dx, dt, 100.0, params, verbose=False)
-    #u_patch_0 = []
-    #v_patch_0 = []
-    #for i in range(n_teeth):
-    #    u_patch_0.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    #    v_patch_0.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    #z0 = np.concatenate((np.concatenate(u_patch_0), np.concatenate(v_patch_0))) # Should be a single array
-    print('Type z0', type(z0), len(z0))
-    #z0 = opt.newton_krylov(F, z0, rdiff=1.e-8, f_tol=tolerance, verbose=True)
     print('Initial Point Found.\n')
 
     # Continuation Parameters

@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.linalg as lg
+import scipy.sparse.linalg as slg
 import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
@@ -202,7 +203,7 @@ def findSteadyStateNewtonGMRES():
 
     # Setup the Domain and its Parameters
     L = 20.0
-    n_teeth = 100
+    n_teeth = 30
     n_gaps = n_teeth - 1
     gap_over_tooth_size_ratio = 1
     n_points_per_tooth = 11
@@ -223,14 +224,14 @@ def findSteadyStateNewtonGMRES():
 
     # Load the Gap-Tooth Steady State from Time Evolution and use it as initial condition
     print('Loading Initial Condition from File ...')
-    gt_data = np.load(directory + 'gaptooth_evolution_T=' + str(200.0) + '.npy')
+    gt_data = np.load(directory + 'gaptooth_evolution_nteeth='+str(n_teeth) + '_T=' + str(200.0) + '.npy')
     u_gt = gt_data[1,:]
     v_gt = gt_data[2,:]
     z_gt = np.concatenate((u_gt, v_gt))
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
     print('\nCalculating Initial Psi Value ...')
-    dt = 1.e-5
+    dt = 1.e-4
     T_psi = 0.2
     T_patch = 10 * dt
     psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
@@ -277,6 +278,68 @@ def findSteadyStateNewtonGMRES():
     plt.title('Steady-State Gap-Tooth')
     plt.xlabel(r'$x$')
     plt.ylabel(r'$u, v$', rotation=0)
+    plt.legend()
+    plt.show()
+
+def calculateEigenvalues():
+    BSpline.ClampedCubicSpline.lu_exists = False
+
+    # Setup the Domain and its Parameters
+    L = 20.0
+    n_teeth = 100
+    n_gaps = n_teeth - 1
+    gap_over_tooth_size_ratio = 1
+    n_points_per_tooth = 11
+    n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
+    N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
+    dx = L / (N - 1)
+    x_array = np.linspace(0.0, L, N)
+    x_plot_array = []
+    for i in range(n_teeth):
+        x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
+
+    # Model parameters
+    a0 = -0.03
+    a1 = 2.0
+    delta = 4.0
+    eps = 0.1
+    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
+
+    # Load the Gap-Tooth Steady State from Time Evolution and use it as initial condition
+    print('Loading Steady State from File ...')
+    ss_data = np.load(directory + 'gaptooth_evolution_T=' + str(200.0) + '.npy')
+    u_ss = ss_data[1,:]
+    v_ss = ss_data[2,:]
+    z_ss = np.concatenate((u_ss, v_ss))
+
+    # Gap-Tooth Psi Function
+    print('\nCalculating Leading Eigenvalues using Arnoldi ...')
+    r_diff = 1.e-8
+    T_psi = 0.2
+    dt = 1.e-3
+    T_patch = 10 * dt
+    psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
+    d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
+    D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
+    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
+    print('Done.')
+
+    # Save the eigenvalues to file
+    #np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
+
+    # Calculate the eigenvalues of the right-hand side PDE in the grid points as well
+    # Use those stored on file as an approximation
+    euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
+    euler_eigvals = euler_eigvals[1,:]
+    #approx_psi_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
+
+    # Plot the eigenvalues in the complex plane
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label='Timestepper Eigenvalues')
+    plt.scatter(np.real(euler_eigvals), np.imag(euler_eigvals), label=r'Euler Timestepper Eigenvalues')
+    plt.xlabel('Real Part')
+    plt.ylabel('Imaginary Part')
+    plt.grid(visible=True, which='major', axis='both')
+    plt.title('Gap-Tooth Timestepper Eigenvalues')
     plt.legend()
     plt.show()
 

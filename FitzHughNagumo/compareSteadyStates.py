@@ -16,7 +16,7 @@ U_tooth = gap_no_tooth_data[1,:]
 V_tooth = gap_no_tooth_data[2,:]
 
 print('\nLoading Steady-State of the Gap-Tooth Scheme')
-n_teeth = 100
+n_teeth = 30
 n_points_per_tooth = 11
 gap_tooth_data = np.load(directory + 'gaptooth_steady_state.npy')
 x_gaptooth = gap_tooth_data[0,:]

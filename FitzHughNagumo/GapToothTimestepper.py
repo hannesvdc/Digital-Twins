@@ -227,7 +227,7 @@ def findSteadyStateNewtonGMRES():
     gt_data = np.load(directory + 'gaptooth_evolution_T=' + str(200.0) + '.npy')
     u_gt = gt_data[1,:]
     v_gt = gt_data[2,:]
-    z_gt = np.concatenate((np.concatenate(u_gt), np.concatenate(v_gt)))
+    z_gt = np.concatenate((u_gt, v_gt))
 
     # Calculate the psi - value of the Euler scheme. First transform Euler to the patches datastructure
     dt = 1.e-5

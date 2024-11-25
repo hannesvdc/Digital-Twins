@@ -251,6 +251,7 @@ def findSteadyStateNewtonGMRES():
     v_ss = z_ss[N_ss:]
 
     # Store the steady - state
+    print('Storing and Plotting ...')
     np.save(directory + 'gaptooth_steady_state.npy', np.vstack((np.concatenate(x_plot_array), u_ss, v_ss)))
 
     # Convert the found steady-state to the gap-tooth datastructure and plot

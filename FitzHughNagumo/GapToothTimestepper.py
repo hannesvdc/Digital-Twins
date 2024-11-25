@@ -299,6 +299,7 @@ def calculateEigenvalues():
     n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
     N_all = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
     N = n_teeth * n_points_per_tooth
+    print('N=',N)
     dx = L / (N_all - 1)
     x_array = np.linspace(0.0, L, N_all)
     x_plot_array = []
@@ -336,7 +337,7 @@ def calculateEigenvalues():
 
     # Compare the eigenvalues to those of the Euler Timestepper.
     euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
-    euler_eigvals = euler_eigvals[1,:]
+    euler_eigvals = euler_eigvals[0,:]
 
     # Plot the eigenvalues in the complex plane
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label='Timestepper Eigenvalues')

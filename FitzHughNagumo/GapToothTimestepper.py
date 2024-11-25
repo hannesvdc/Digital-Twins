@@ -10,6 +10,7 @@ import BSpline
 from EulerTimestepper import fhn_euler_timestepper
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
+n_evals = 0
 
 def sigmoid(x_array, x_center=0.0, y_center=0.0, x_scale=1.0, y_scale=1.0):
     return y_scale / (1.0 + np.exp(-(x_array  - x_center)/x_scale)) + y_center
@@ -170,7 +171,7 @@ def patchTimestepper():
     plt.legend()
     plt.show()
 
-def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False):
+def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False, countEvalutions=False):
     len_uv = len(z0) // 2
     n_points_per_tooth = len_uv // n_teeth
 
@@ -189,6 +190,11 @@ def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_dir
         if verbose:
             print(k*T_patch)
         u_patches, v_patches = patchOneTimestep(u_patches, v_patches, x_array, L, n_teeth, dx, dt, T_patch, params, solver=solver)
+
+    if countEvalutions:
+        global n_evals
+        n_evals += 1
+        print('Evaluation', n_evals)
 
     # Convert patches datastructure back to a single numpy array
     u_new = np.concatenate(u_patches)
@@ -316,23 +322,21 @@ def calculateEigenvalues():
     # Gap-Tooth Psi Function
     print('\nCalculating Leading Eigenvalues using Arnoldi ...')
     r_diff = 1.e-8
-    T_psi = 1.0 # For comparison with Euler
+    T_psi = 1.0 # For proper comparison with Euler
     dt = 1.e-4
     T_patch = 10 * dt
-    psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
+    psi = lambda z: psiPatch(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct', countEvalutions=True)
     d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
     psi_eigvals = slg.eigs(D_psi, 2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
     # Save the eigenvalues to file
-    #np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
+    np.save(directory + 'gaptooth_eigenvalues.npy', psi_eigvals)
 
-    # Calculate the eigenvalues of the right-hand side PDE in the grid points as well
-    # Use those stored on file as an approximation
+    # Compare the eigenvalues to those of the Euler Timestepper.
     euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
     euler_eigvals = euler_eigvals[1,:]
-    #approx_psi_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
 
     # Plot the eigenvalues in the complex plane
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label='Timestepper Eigenvalues')
@@ -343,7 +347,6 @@ def calculateEigenvalues():
     plt.title('Gap-Tooth Timestepper Eigenvalues')
     plt.legend()
     plt.show()
-
 
 def parseArguments():
     parser = argparse.ArgumentParser()

@@ -141,7 +141,6 @@ def calculateBifurcationDiagram():
     u_ss = gt_ss[1,:]
     v_ss = gt_ss[2,:]
     z0 = np.concatenate((u_ss, v_ss))
-    print('Initial Point Found.\n')
 
     # Continuation Parameters
     max_steps = 170
@@ -154,7 +153,6 @@ def calculateBifurcationDiagram():
     random_tangent = rng.normal(0.0, 1.0, M+1)
     initial_tangent = computeTangent(lambda v: dGdz_w(z0, v, eps0), dGdeps(z0, eps0), random_tangent / lg.norm(random_tangent), M, tolerance)
     initial_tangent = initial_tangent / lg.norm(initial_tangent)
-    print('Initial Tangent Found')
 
     # Do actual numerical continuation in both directions
     print('Runnning Pseudo-Arclength Continuation ...')

@@ -147,7 +147,7 @@ def patchTimestepper():
     psi_val = psiPatch(z_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params)
     print('Psi Gap-Tooth', lg.norm(psi_val))
 
-    # Euler Timestepping for Comparison
+    # Euler Timestepping for Comparison (Keep this - we need to compare at the same end time T)
     print('Running the Euler method for comparison')
     dt_euler = 1.e-3
     N_euler = 200

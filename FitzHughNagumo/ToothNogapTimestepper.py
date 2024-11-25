@@ -107,7 +107,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='k
     z_new = np.concatenate((u_new, v_new))
 
     # Return the psi - function
-    return (z0 - z_new) / T
+    return z0 - z_new
 
 def patchTimestepper():
     BSpline.ClampedCubicSpline.lu_exists = False
@@ -279,14 +279,22 @@ def calculateEigenvalues():
     print('Done.')
 
     # Save the eigenvalues to file
-    np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
+    #np.save(directory + 'tooth_no_gap_eigenvalues.npy', psi_eigvals)
+
+    # Calculate the eigenvalues of the right-hand side PDE in the grid points as well
+    # Use those stored on file as an approximation
+    euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
+    f_eigvals = euler_eigvals[1,:]
+    approx_psi_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
 
     # Plot the eigenvalues in the complex plane
-    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals))
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label='Timestepper Eigenvalues')
+    plt.scatter(np.real(approx_psi_eigvals), np.imag(approx_psi_eigvals), label=r'$1-\exp\left(\sigma T\right)$')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')
     plt.title('Tooth-No-Gap Timestepper Eigenvalues')
+    plt.legend()
     plt.show()
 
 def parseArguments():

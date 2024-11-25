@@ -9,13 +9,13 @@ x_euler = euler_data[0,:]
 U_euler = euler_data[1,:]
 V_euler = euler_data[2,:]
 
-print('\nCalculating Steady-State of the Tooth-No-Gap Scheme')
+print('\nLoading Steady-State of the Tooth-No-Gap Scheme')
 gap_no_tooth_data = np.load(directory + 'tooth_no_gap_steady_state.npy')
 x_tooth = gap_no_tooth_data[0,:]
 U_tooth = gap_no_tooth_data[1,:]
 V_tooth = gap_no_tooth_data[2,:]
 
-print('\nCalculating Steady-State of the Gap-Tooth Scheme')
+print('\nLoading Steady-State of the Gap-Tooth Scheme')
 n_teeth = 100
 n_points_per_tooth = 11
 gap_tooth_data = np.load(directory + 'gaptooth_steady_state.npy')

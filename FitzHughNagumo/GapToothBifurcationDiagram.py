@@ -143,7 +143,7 @@ def calculateBifurcationDiagram():
     z0 = np.concatenate((u_ss, v_ss))
 
     # Continuation Parameters
-    max_steps = 170
+    max_steps = 200
     ds_min = 1.e-6
     ds_max = 0.1
     ds = 0.001

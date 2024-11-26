@@ -9,7 +9,6 @@ class ClampedCubicSpline:
 
     @staticmethod
     def createSystem(x, n, left_bc, right_bc):
-        print('creating system')
         A = np.zeros((4 * n, 4 * n))
 
         # interpolation conditions

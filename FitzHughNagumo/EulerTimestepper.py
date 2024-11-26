@@ -192,7 +192,7 @@ def calculateEigenvalues():
     N = 200
     dx = L / N
     dt = 1.e-3
-    T_psi = 1.0
+    T_psi = 0.2
 
     # Model Parameters
     a0 = -0.03
@@ -214,7 +214,7 @@ def calculateEigenvalues():
     # Calculate the eigenvalues of Psi in steady state
     print('\nCalculating Leading Eigenvalues of Psi using Arnoldi ...')
     r_diff = 1.e-8
-    d_psi_mvp = lambda w: (psi(z_ss + r_diff * w, T_psi, dx, dt, params) - psi(z_ss, T_psi, dx, dt, params)) / r_diff
+    d_psi_mvp = lambda w: T_psi * (psi(z_ss + r_diff * w, T_psi, dx, dt, params) - psi(z_ss, T_psi, dx, dt, params)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
     psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
@@ -227,7 +227,9 @@ def calculateEigenvalues():
     psi_approx_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
     print('Done.')
 
-    np.save(directory + 'euler_eigenvalues.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
+    # Saving
+    toNumericString = lambda number: str(number).replace('.', 'p')
+    np.save(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
 
     # Plot the Eigenvalues
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\psi$ ')

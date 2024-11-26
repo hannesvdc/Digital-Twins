@@ -337,7 +337,7 @@ def calculateEigenvalues():
     np.save(directory + 'gaptooth_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', psi_eigvals)
 
     # Compare the eigenvalues to those of the Euler Timestepper.
-    euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
+    euler_eigvals = np.load(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy')
     euler_eigvals = euler_eigvals[0,:]
 
     # Plot the eigenvalues in the complex plane

@@ -107,7 +107,7 @@ def psiPatchNogap(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='k
     z_new = np.concatenate((u_new, v_new))
 
     # Return the psi - function
-    return z0 - z_new
+    return (z0 - z_new) / T
 
 def patchTimestepper():
     BSpline.ClampedCubicSpline.lu_exists = False
@@ -225,6 +225,7 @@ def findSteadyStateNewtonGMRES():
     print('Steady - State Found!')
 
     # Save the steady state to file
+    toNumericString = lambda number: str(number).replace('.', 'p')
     np.save(directory + 'tooth_no_gap_steady_state.npy', np.vstack((x_array, u_ss, v_ss)))
 
     # Plot the steady-state
@@ -269,20 +270,21 @@ def calculateEigenvalues():
     # Gap-Tooth Psi Function
     print('\nCalculating Leading Eigenvalues using Arnoldi ...')
     r_diff = 1.e-8
-    T_psi = 1.0
+    T_psi = 0.2
     dt = 1.e-3
     T_patch = 10 * dt
-    psi = lambda z: psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
+    psi = lambda z: T_psi * psiPatchNogap(z, x_plot_array, L, n_teeth, dx, dt, T_patch, T_psi, params, solver='lu_direct')
     d_psi_mvp = lambda w: (psi(z_ss + r_diff * w) - psi(z_ss)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
     psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
     print('Done.')
 
     # Save the eigenvalues to file
-    np.save(directory + 'gaptooth_eigenvalues.npy', psi_eigvals)
+    toNumericString = lambda n: str(n).replace('.', 'p')
+    np.save(directory + 'tooth_no_gap_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', psi_eigvals)
 
     # Compare these eigenvalues with the Euler timestepper
-    euler_eigvals = np.load(directory + 'euler_eigenvalues.npy')
+    euler_eigvals = np.load(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy')
     f_eigvals = euler_eigvals[1,:]
     approx_psi_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
 

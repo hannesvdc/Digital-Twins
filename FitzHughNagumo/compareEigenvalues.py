@@ -1,14 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def toNumericString(n):
-    return str(n).replace('.', 'p')
+T_psi = 0.2
+toNumericString = lambda n: str(n).replace('.', 'p')
 
-T_psi = 1.0
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-euler_eigvals = np.load(directory + 'euler_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
-toothnogap_eigvals = np.load(directory + 'tooth_no_gap_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
-gaptooth_eigvals = np.load(directory + 'gaptooth_eigenvalues_Tpsi='+toNumericString(1.0)+'.npy')
+euler_eigvals = np.load(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy')
+toothnogap_eigvals = np.load(directory + 'tooth_no_gap_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy')
+gaptooth_eigvals = np.load(directory + 'gaptooth_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy')
 
 # Load components
 euler_psi = euler_eigvals[0,:]
@@ -23,7 +22,7 @@ plt.scatter(np.real(gaptooth_eigvals), np.imag(gaptooth_eigvals), label='Gap-Too
 plt.xlabel('Real Part')
 plt.ylabel('Imaginary Part')
 plt.grid(visible=True, which='major', axis='both')
-plt.title('Timestepper Eigenvalues')
+plt.title(r'Timestepper Eigenvalues $T_{\psi} =$' + str(T_psi))
 plt.legend()
 
 plt.figure()

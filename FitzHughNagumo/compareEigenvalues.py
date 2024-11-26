@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-T_psi = 0.2
+T_psi = 1.0
 toNumericString = lambda n: str(n).replace('.', 'p')
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'

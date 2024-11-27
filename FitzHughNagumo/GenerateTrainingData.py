@@ -111,7 +111,7 @@ def evolveBFTrajectories():
     print(euler_eps1.shape)
 
     # Take 10 values of epsilon from each branch.
-    max_index = N_points // 2
+    max_index = int(2.0/3.0* N_points)
     indices = np.linspace(1, max_index, 10, dtype=int)
     print(indices)
     rng = rd.RandomState(seed=100)
@@ -125,8 +125,8 @@ def evolveBFTrajectories():
         eps_evolution = np.zeros((n_initials, int(T/dT)-1, 2*N)) # Ignore the first two timesteps
         for j in range(n_initials):
             print('initial ', j)
-            u = u0 + 0.1*rng.normal(0.0, 1.0, N)
-            v = v0 + 0.1*rng.normal(0.0, 1.0, N)
+            u = u0 + 0.01*rng.normal(0.0, 1.0, N)
+            v = v0 + 0.01*rng.normal(0.0, 1.0, N)
             evolution = timeSimulation(u, v, dx, dt, T, dT, params)
             eps_evolution[j,:,:] = evolution
 
@@ -148,8 +148,6 @@ def evolveBFTrajectories():
             eps_evolution[j,:,:] = evolution
 
         np.save(directory + 'DeepONet Data/FHN_BF_Evolution_eps=' + str(eps).replace('.', 'p') + '.npy', eps_evolution)
-
-
 
 if __name__ == '__main__':
     evolveBFTrajectories()

@@ -32,14 +32,16 @@ plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
 
 # Then plot the Tooth-Without-Gaps diagram (substitute for gap-tooth bf diagram for now)
 tng_data = np.load(directory + tooth_no_gap_bf_file)
+M = (tng_data.shape[1] - 2) // 2
+N = M // 2
 tng_p1 = tng_data[:,0:M]
 tng_eps1 = tng_data[:,M]
 tng_p2 = tng_data[:,M+1:2*M+1]
 tng_eps2 = tng_data[:,2*M+1]
 tng_u_data_p1 = np.average(tng_p1[:,0:N], axis=1)
 tng_u_data_p2 = np.average(tng_p2[:,0:N], axis=1)
-#plt.plot(tng_eps1, tng_u_data_p1, color='tab:orange', label='Tooth-Without-Gaps Timestepper')
-#plt.plot(tng_eps2, tng_u_data_p2, color='tab:orange')
+plt.plot(tng_eps1, tng_u_data_p1, color='tab:orange', label='Tooth-Without-Gaps Timestepper')
+plt.plot(tng_eps2, tng_u_data_p2, color='tab:orange')
 
 # Finally plot the Gap-Tooth bifurcation diagram
 gt_data = np.load(directory + gaptooth_bf_file)

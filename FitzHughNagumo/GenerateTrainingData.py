@@ -61,7 +61,7 @@ def evolveTrajectories():
     eps_list = np.array([-0.01, 0.0, 0.005, 0.01, 0.013, 0.015, 0.017, 0.02, 0.03, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.92])
     assert len(eps_list) == 20
 
-    T = 450.0
+    T = 100.0
     dt = 1.e-3
     dx = L / N
     dT = 1.0
@@ -92,7 +92,7 @@ def evolveBFTrajectories():
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
-    T = 450.0
+    T = 50.0
     N = 200
     M = 2*N
     dt = 1.e-3

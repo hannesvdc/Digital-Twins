@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 
 directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
 euler_bf_file = 'euler_bf_diagram.npy'
-gaptooth_bf_file = 'tooth_no_gap_bf_diagram.npy'
+tooth_no_gap_bf_file = 'tooth_no_gap_bf_diagram.npy'
+gaptooth_bf_file = 'gaptooth_bf_diagram.npy'
 
 is_sorted = lambda a: np.all(a[:-1] <= a[1:])
 
@@ -30,6 +31,17 @@ plt.plot(euler_eps1, euler_u_data_p1, color='tab:blue', label='Euler Timestepper
 plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
 
 # Then plot the Tooth-Without-Gaps diagram (substitute for gap-tooth bf diagram for now)
+tng_data = np.load(directory + tooth_no_gap_bf_file)
+tng_p1 = tng_data[:,0:M]
+tng_eps1 = tng_data[:,M]
+tng_p2 = tng_data[:,M+1:2*M+1]
+tng_eps2 = tng_data[:,2*M+1]
+tng_u_data_p1 = np.average(tng_p1[:,0:N], axis=1)
+tng_u_data_p2 = np.average(tng_p2[:,0:N], axis=1)
+#plt.plot(tng_eps1, tng_u_data_p1, color='tab:orange', label='Tooth-Without-Gaps Timestepper')
+#plt.plot(tng_eps2, tng_u_data_p2, color='tab:orange')
+
+# Finally plot the Gap-Tooth bifurcation diagram
 gt_data = np.load(directory + gaptooth_bf_file)
 M = (gt_data.shape[1] - 2) // 2
 N = M // 2
@@ -40,8 +52,8 @@ gt_eps2 = gt_data[:,2*M+1]
 
 gt_u_data_p1 = np.average(gt_p1[:,0:N], axis=1)
 gt_u_data_p2 = np.average(gt_p2[:,0:N], axis=1)
-plt.plot(gt_eps1, gt_u_data_p1, color='tab:orange', label='Gap-Tooth Timestepper')
-plt.plot(gt_eps2, gt_u_data_p2, color='tab:orange')
+plt.plot(gt_eps1, gt_u_data_p1, color='tab:green', label='Gap-Tooth Timestepper')
+plt.plot(gt_eps2, gt_u_data_p2, color='tab:green')
 plt.xlabel(r'$\varepsilon$')
 plt.ylabel(r'$<u>$', rotation=0)
 

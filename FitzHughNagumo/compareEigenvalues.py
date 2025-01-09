@@ -15,10 +15,10 @@ euler_f = euler_eigvals[1,:]
 euler_psi_approx = euler_eigvals[2,:]
 
 # Plot in two separate figures
-plt.scatter(np.real(euler_psi_approx), np.imag(euler_psi_approx), label=r'$1 - \exp(\sigma T)$')
+#plt.scatter(np.real(euler_psi_approx), np.imag(euler_psi_approx), label=r'$1 - \exp(\sigma T)$')
 plt.scatter(np.real(euler_psi), np.imag(euler_psi), label='Euler Timestepper')
-plt.scatter(np.real(toothnogap_eigvals), np.imag(toothnogap_eigvals), label='Tooth-No-Gap Timestepper')
-plt.scatter(np.real(gaptooth_eigvals), np.imag(gaptooth_eigvals), label='Gap-Tooth Timestepper')
+#plt.scatter(np.real(toothnogap_eigvals), np.imag(toothnogap_eigvals), label='Tooth-No-Gap Timestepper')
+#plt.scatter(np.real(gaptooth_eigvals), np.imag(gaptooth_eigvals), label='Gap-Tooth Timestepper')
 plt.xlabel('Real Part')
 plt.ylabel('Imaginary Part')
 plt.grid(visible=True, which='major', axis='both')

@@ -95,12 +95,12 @@ def plotADEigenvalues():
         dF_fd[n,:] = grad_n
 
     # Calculate the eigenvalues of these numpy matrices
-    eigvals_ad, _ = lg.eig(dF_ad)
-    eigvals_fd, _ = lg.eig(dF_fd)
+    eigvals_ad, eigvecs_ad = lg.eig(dF_ad)
+    eigvals_fd, eigvecs_df = lg.eig(dF_fd)
 
     # Plot the eigenvalues
     plt.scatter(np.real(eigvals_ad), np.imag(eigvals_ad), label='Automatic Differentiation')
-    plt.scatter(np.real(eigvals_fd), np.imag(eigvals_fd), label='Finite Differences')
+    plt.scatter(np.real(eigvals_fd), np.imag(eigvals_fd), edgecolors='tab:orange', facecolor='none', label='Finite Differences')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.title(r'Eigenvalues of the Jacobian of $\psi$')

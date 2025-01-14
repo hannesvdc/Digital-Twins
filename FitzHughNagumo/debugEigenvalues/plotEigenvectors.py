@@ -58,6 +58,12 @@ def plotDfEigenvectors():
     eigvecs = eigvecs[:,indices]
     print(eigvals)
 
+    # Store the 20 largest eigenvectors in a file so the DeepONet can 
+    # use them as training data PCA/POD-style.
+    directory = '/Users/hannesvdc/Research/Projects/Time-stepper/FitzHugh-Nagumo/deeponet_singleparameter/'
+    filename = 'POD_eigenvectors.npy'
+    np.save(directory + filename, eigvecs)
+
     # Plot the eigenvalues
     fig, ax = plt.subplots()
     ax.scatter(eigvals.real, eigvals.imag, label=r'Eigenvalues $\lambda$ of $\nabla f$')
@@ -90,6 +96,7 @@ def plotDfEigenvectors():
     ax1.legend()
     ax2.legend()
     plt.suptitle('Fastest Eigenvalues')
+
     plt.show()
     
 

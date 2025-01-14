@@ -249,7 +249,6 @@ def calculateEigenvalues():
     plt.legend()
     plt.show()
 
-
 def parseArguments():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment', dest='experiment', nargs='?')

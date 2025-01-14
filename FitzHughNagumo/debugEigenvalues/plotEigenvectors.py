@@ -77,6 +77,19 @@ def plotDfEigenvectors():
     ax2.set_xlabel(r'$x$')
     ax1.legend()
     ax2.legend()
+    plt.suptitle('Slowest Eigenvalues')
+
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(x_arrays, w_inf[:N], label=r'$u_{\infty}$')
+    ax2.plot(x_arrays, w_inf[N:], label=r'$v_{\infty}$')
+    for n in range(10):
+        ax1.plot(x_arrays, eigvecs[:N,400-n-1].real)
+        ax2.plot(x_arrays, eigvecs[N:,400-n-1].real, label=rf'$v_{399-n}$')
+    ax1.set_xlabel(r'$x$')
+    ax2.set_xlabel(r'$x$')
+    ax1.legend()
+    ax2.legend()
+    plt.suptitle('Fastest Eigenvalues')
     plt.show()
     
 

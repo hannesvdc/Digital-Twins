@@ -25,8 +25,10 @@ def fetchSteadyState():
         For now, we just load it from file because it is available.
     """
     directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/FitzhughNagumo/'
-    ss_filename = 'euler_steady_state.npy'
-    return np.load(directory + ss_filename)
+    steady_state_filename = 'euler_steady_state.npy'
+    steady_state = np.load(directory + steady_state_filename)
+
+    return np.concatenate((steady_state[1,:], steady_state[2,:]))
 
 def plotDfEigenvectors():
     eps_fd = 1.e-8
@@ -41,12 +43,42 @@ def plotDfEigenvectors():
 
     # Setup the Jacobian matrix of f using df
     Df = slg.LinearOperator(shape=(2*N, 2*N), matvec=df)
+    Df_matrix = np.zeros(Df.shape)
+    for n in range(2*N):
+        e_n = np.eye(2*N)[:,n]
+        Df_matrix[:,n] = df(e_n)
 
-    # Calculate the leading eigenvalues of the Jacobian of f. 
-    # Leading = smallest magnitude (closest to zero)
-    eigvals, eigvects = slg.eigs(Df, k=2*N-2, which='SM', return_eigenvectors=True)
+    # Calculate all eigenvalues of the Jacobian of f. 
+    eigvals, eigvecs = lg.eig(Df_matrix)
+
+    # Sort the eigenvalue / eigenvector pairs by the real part of the eigenvalue
+    real_parts = np.real(eigvals)
+    indices = np.argsort(real_parts)[::-1]
+    eigvals = eigvals[indices]
+    eigvecs = eigvecs[:,indices]
     print(eigvals)
 
+    # Plot the eigenvalues
+    fig, ax = plt.subplots()
+    ax.scatter(eigvals.real, eigvals.imag, label=r'Eigenvalues $\lambda$ of $\nabla f$')
+    ax.set_xlabel('Real Part')
+    ax.set_ylabel('Imaginary Part')
+    ax.legend()
+
+    # Plot the steady-state and the eigenvectors
+    x_arrays = np.linspace(0, L, N)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(x_arrays, w_inf[:N], label=r'$u_{\infty}$')
+    ax2.plot(x_arrays, w_inf[N:], label=r'$v_{\infty}$')
+    for n in range(10):
+        ax1.plot(x_arrays, eigvecs[:N,n].real)
+        ax2.plot(x_arrays, eigvecs[N:,n].real, label=f'$v_{n}$')
+    ax1.set_xlabel(r'$x$')
+    ax2.set_xlabel(r'$x$')
+    ax1.legend()
+    ax2.legend()
+    plt.show()
+    
 
 if __name__ == '__main__':
     plotDfEigenvectors()

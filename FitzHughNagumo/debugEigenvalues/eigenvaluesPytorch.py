@@ -123,6 +123,7 @@ def plotADEigenvalues():
     plt.plot(x_arrays, w_ss_numpy[:N], label=r'$u_{\infty}$')
     plt.plot(x_arrays, w_ss_numpy[N:], label=r'$v_{\infty}$')
     plt.xlabel('x')
+    plt.legend()
     plt.title('PyTorch Steady State')
 
     # Plot the leading (=smallest real part) eigenvectors of both 
@@ -138,7 +139,7 @@ def plotADEigenvalues():
     ax2.set_xlabel(r'$x$')
     ax1.legend()
     ax2.legend()
-    plt.suptitle('Pytorch Eigenvalues')
+    plt.suptitle('PyTorch Eigenfunctions')
 
     plt.show()
 

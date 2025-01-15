@@ -1,6 +1,7 @@
 import torch as pt
 import numpy as np
 import numpy.linalg as lg
+import scipy.optimize as opt
 import matplotlib.pyplot as plt
 
 pt.set_default_dtype(pt.float64)
@@ -92,11 +93,21 @@ def plotADEigenvalues():
     for n in range(2*N):
         e_n = np.eye(2*N)[:,n]
         grad_n = df_fd(e_n)
-        dF_fd[n,:] = grad_n
+        dF_fd[:,n] = grad_n
 
     # Calculate the eigenvalues of these numpy matrices
     eigvals_ad, eigvecs_ad = lg.eig(dF_ad)
-    eigvals_fd, eigvecs_df = lg.eig(dF_fd)
+    eigvals_fd, eigvecs_fd = lg.eig(dF_fd)
+    ad_indices = np.argsort(np.real(eigvals_ad))
+    fd_indices = np.argsort(np.real(eigvals_fd))
+    eigvals_ad = eigvals_ad[ad_indices]
+    eigvals_fd = eigvals_fd[fd_indices]
+    eigvecs_ad = eigvecs_ad[:,ad_indices]
+    eigvecs_fd = eigvecs_fd[:,fd_indices]
+
+    # Calculate the steady-state distribution of the PyTorch implementation
+    f_numpy_wrapper = lambda w: psi(pt.tensor(w), T, dt).detach().numpy()
+    w_ss_numpy = opt.newton_krylov(f_numpy_wrapper, w_ss.detach().numpy())
 
     # Plot the eigenvalues
     plt.scatter(np.real(eigvals_ad), np.imag(eigvals_ad), label='Automatic Differentiation')
@@ -105,6 +116,30 @@ def plotADEigenvalues():
     plt.ylabel('Imaginary Part')
     plt.title(r'Eigenvalues of the Jacobian of $\psi$')
     plt.legend()
+
+    # Plot the steady states
+    plt.figure()
+    x_arrays = np.linspace(0, L, N)
+    plt.plot(x_arrays, w_ss_numpy[:N], label=r'$u_{\infty}$')
+    plt.plot(x_arrays, w_ss_numpy[N:], label=r'$v_{\infty}$')
+    plt.xlabel('x')
+    plt.title('PyTorch Steady State')
+
+    # Plot the leading (=smallest real part) eigenvectors of both 
+    # methods and compare. They are the same up to a factor -1 !!!
+    x_arrays = np.linspace(0, L, N)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    for n in range(10):
+        ax1.plot(x_arrays, eigvecs_ad[:N,n].real, color='tab:blue', linestyle='-')
+        ax1.plot(x_arrays, eigvecs_fd[:N,n].real, color='tab:orange', linestyle='--')
+        ax2.plot(x_arrays, eigvecs_ad[N:,n].real, color='tab:blue', linestyle='-')
+        ax2.plot(x_arrays, eigvecs_fd[N:,n].real, color='tab:orange', linestyle='--', label=f'$v_{n}$')
+    ax1.set_xlabel(r'$x$')
+    ax2.set_xlabel(r'$x$')
+    ax1.legend()
+    ax2.legend()
+    plt.suptitle('Pytorch Eigenvalues')
+
     plt.show()
 
 if __name__ == '__main__':

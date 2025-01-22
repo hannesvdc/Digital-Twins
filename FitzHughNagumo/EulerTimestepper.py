@@ -192,7 +192,7 @@ def calculateEigenvalues():
     N = 200
     dx = L / N
     dt = 1.e-3
-    T_psi = 0.2
+    T_psi = 1.0
 
     # Model Parameters
     a0 = -0.03
@@ -216,14 +216,14 @@ def calculateEigenvalues():
     r_diff = 1.e-8
     d_psi_mvp = lambda w: T_psi * (psi(z_ss + r_diff * w, T_psi, dx, dt, params) - psi(z_ss, T_psi, dx, dt, params)) / r_diff
     D_psi = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_psi_mvp)
-    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='LM', return_eigenvectors=False)
+    psi_eigvals = slg.eigs(D_psi, k=2*N-2, which='SM', return_eigenvectors=False)
     print('Done.')
 
     # Calculate the eigenvalues of the PDE right-hand side in steady state
     print('\nCalculating Leading Eigenvalues of the PDE using Arnoldi ...')
     d_f_mvp = lambda w: (f_wrapper(z_f_ss + r_diff * w, N, dx, params) - f_wrapper(z_f_ss, N, dx, params)) / r_diff
     D_f = slg.LinearOperator(shape=(2*N, 2*N), matvec=d_f_mvp)
-    f_eigvals = slg.eigs(D_f, k=2*N-2, which='LM', return_eigenvectors=False)
+    f_eigvals = slg.eigs(D_f, k=2*N-2, which='SM', return_eigenvectors=False)
     psi_approx_eigvals = 1.0 - np.exp(f_eigvals * T_psi)
     print('Done.')
 
@@ -233,7 +233,7 @@ def calculateEigenvalues():
 
     # Plot the Eigenvalues
     plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\psi$ ')
-    plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), label=r'$1 - \exp(\sigma T)$')
+    plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), edgecolors='tab:orange', facecolor='none', label=r'$1 - \exp(\sigma T)$')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')

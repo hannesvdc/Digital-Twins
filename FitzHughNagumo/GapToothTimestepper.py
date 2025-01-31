@@ -349,8 +349,6 @@ def showTimeEvolution():
     plt.legend()
     plt.show()
 
-
-
 def calculateEigenvalues():
     BSpline.ClampedCubicSpline.lu_exists = False
 

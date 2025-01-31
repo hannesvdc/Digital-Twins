@@ -85,7 +85,7 @@ def plotFitzHughNagumoSolution():
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
-    eps = 0.1 # 0.01 originally for the spatio-temporal oscillations
+    eps = 0.1 # 0.01 for oscillating solution beyond the Hopf bifurcation
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     # Initial condition
@@ -104,6 +104,7 @@ def plotFitzHughNagumoSolution():
     u_solution[0,:] = u0
     v_solution[0,:] = v0
     for n in range(int(T / dt)):
+        print('t =', n * dt)
         u, v = fhn_euler(u, v, dx, dt, params)
 
         if n > 0 and n % 10 == 0:
@@ -180,8 +181,8 @@ def findSteadyState():
 
     plt.plot(x_array, u_ss, linestyle='dashed', label=r'Newton-GMRES $u(x)$')
     plt.plot(x_array, v_ss, linestyle='dashed', label=r'Newton-GMRES $v(x)$')
-    plt.plot(x_array, u_euler, linestyle='dotted', label=r'Euler Method $u(x)$')
-    plt.plot(x_array, v_euler, linestyle='dotted', label=r'Euler Method $v(x)$')
+    plt.plot(x_array, u_euler, linestyle='dotted', label=r'Time-Evolution $u(x)$')
+    plt.plot(x_array, v_euler, linestyle='dotted', label=r'Time-Evolution $v(x)$')
     plt.xlabel(r'$x$')
     plt.legend()
     plt.show()
@@ -232,16 +233,16 @@ def calculateEigenvalues():
     np.save(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
 
     # Plot the Eigenvalues
-    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\mu$ of $\psi$ ')
-    plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), edgecolors='tab:orange', facecolor='none', label=r'$1 - \exp(\sigma T)$')
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\lambda$ of $\nabla \Psi_\tau$ ')
+    plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), edgecolors='tab:orange', facecolor='none', label=r'$1 - \exp(\tau \sigma)$')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')
-    plt.title('Timestepper Eigenvalues')
+    plt.title('Euler Eigenvalues')
     plt.legend()
 
     plt.figure()
-    plt.scatter(np.real(f_eigvals), np.imag(f_eigvals), label=r'Eigenvalues $\sigma$ of $f$ ')
+    plt.scatter(np.real(f_eigvals), np.imag(f_eigvals), label=r'Eigenvalues $\sigma$ of $\nabla f$ ')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')
     plt.grid(visible=True, which='major', axis='both')

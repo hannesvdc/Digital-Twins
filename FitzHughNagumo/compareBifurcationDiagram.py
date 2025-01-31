@@ -27,8 +27,8 @@ euler_u_data_p2_sorted = euler_u_data_p2[p]
 hopf_index = np.searchsorted(euuler_eps2_sorted, eps_hopf)
 u_hopf = euler_u_data_p2_sorted[hopf_index]
 
-plt.plot(euler_eps1, euler_u_data_p1, color='tab:blue', label='Euler Timestepper')
-plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
+plt.plot(euler_eps1, euler_u_data_p1, color='tab:blue', label='Euler Timestepper') # right-branch
+#plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
 
 # Then plot the Tooth-Without-Gaps diagram (substitute for gap-tooth bf diagram for now)
 tng_data = np.load(directory + tooth_no_gap_bf_file)
@@ -58,8 +58,21 @@ plt.plot(gt_eps1, gt_u_data_p1, color='tab:green', label='Gap-Tooth Timestepper'
 plt.plot(gt_eps2, gt_u_data_p2, color='tab:green')
 plt.xlabel(r'$\varepsilon$')
 plt.ylabel(r'$<u>$', rotation=0)
-
 plt.scatter([eps_hopf], [u_hopf], color='red', label='Hopf Bifurcation')
-
 plt.legend()
+
+# Now show the stable and unstable branches of the Euler timestepper by fining the max epsilon value
+max_eps = np.max(euler_eps1)
+max_eps_index = np.argmax(euler_eps1)
+plt.figure()
+plt.plot(euler_eps1[:max_eps_index], euler_u_data_p1[:max_eps_index], color='tab:blue', label='Stable Branch') # stable branch
+plt.plot(euler_eps1[max_eps_index:], euler_u_data_p1[max_eps_index:], linestyle='--', color='tab:blue', label='Unstable Branch') # unstable branch
+plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
+plt.xlabel(r'$\varepsilon$')
+plt.ylabel(r'$<u>$', rotation=0)
+plt.scatter([eps_hopf], [u_hopf], color='red', label='Hopf Point')
+plt.scatter([max_eps], [euler_u_data_p1[max_eps_index]], color='green', label='Fold Point')
+plt.title('Bifurcation Diagram')
+plt.legend()
+
 plt.show()

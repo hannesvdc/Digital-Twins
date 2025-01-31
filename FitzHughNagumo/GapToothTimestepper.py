@@ -114,7 +114,7 @@ def patchTimestepper():
     a0 = -0.03
     a1 = 2.0
     delta = 4.0
-    eps = 0.1
+    eps = 0.01
     params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
 
     # Initial condition - divide over all teeth
@@ -136,8 +136,8 @@ def patchTimestepper():
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
     n_record_steps = n_patch_steps // 10
-    time_slice_u = [np.zeros((n_patch_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
-    time_slice_v = [np.zeros((n_patch_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
+    time_slice_u = [np.zeros((n_record_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
+    time_slice_v = [np.zeros((n_record_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
     slice_index = 0
     for k in range(n_patch_steps):
         if k % 10 == 0:
@@ -148,12 +148,13 @@ def patchTimestepper():
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
+    print('slice index', slice_index, n_record_steps)
     for l in range(n_teeth):
         time_slice_u[l][n_record_steps,:] = u_sol[l]
         time_slice_v[l][n_record_steps,:] = v_sol[l]
 
     # Store the steady - state
-    np.save(directory + 'gaptooth_evolution_nteeth='+str(n_teeth) + '_T=' + str(T) + '.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
+    #np.save(directory + 'gaptooth_evolution_nteeth='+str(n_teeth) + '_T=' + str(T) + '.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
 
     # Calculate the psi - value of the GapTooth scheme
     T_psi = 1.0
@@ -185,21 +186,21 @@ def patchTimestepper():
     # Plot the complete time-slices
     fig, (ax1, ax2) = plt.subplots(1, 2)
     t_plot_array = np.linspace(0.0, T, n_record_steps+1)
-    u_max = max(np.max(time_slice_u[l] for l in range(n_teeth)))
-    u_min = min(np.max(time_slice_u[l] for l in range(n_teeth)))
-    v_max = max(np.max(time_slice_v[l] for l in range(n_teeth)))
-    v_min = min(np.max(time_slice_v[l] for l in range(n_teeth)))
+    u_max = max(np.max(time_slice_u[l]) for l in range(n_teeth))
+    u_min = min(np.max(time_slice_u[l]) for l in range(n_teeth))
+    v_max = max(np.max(time_slice_v[l]) for l in range(n_teeth))
+    v_min = min(np.max(time_slice_v[l]) for l in range(n_teeth))
     for l in range(n_teeth):
         X, Y = np.meshgrid(x_plot_array[l], t_plot_array)
         ax1.pcolor(X, Y, time_slice_u[l], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
-        ax2.pcolor(X, Y, time_slice_v, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
+        ax2.pcolor(X, Y, time_slice_v[l], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
     ax1.set_xlabel(r'$x$')
     ax1.set_ylabel(r'$t$')
     ax1.set_title(r'$u(x, t)$')        
     ax2.set_xlabel(r'$x$')
     ax2.set_ylabel(r'$t$')
     ax2.set_title(r'$u(x, t)$')
-    plt.title(r'Gap-Tooth Time-Evolution $\varepsilon=0.1$')
+    plt.title(r'Gap-Tooth Time-Evolution $\varepsilon=0.01$')
     plt.show()
 
 def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False, countEvalutions=False):

@@ -233,7 +233,7 @@ def calculateEigenvalues():
     np.save(directory + 'euler_eigenvalues_Tpsi='+toNumericString(T_psi)+'.npy', np.vstack((psi_eigvals, f_eigvals, psi_approx_eigvals)))
 
     # Plot the Eigenvalues
-    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\lambda$ of $\nabla \Psi_\tau$ ')
+    plt.scatter(np.real(psi_eigvals), np.imag(psi_eigvals), label=r'Eigenvalues $\lambda$ of $\nabla \Psi$ ')
     plt.scatter(np.real(psi_approx_eigvals), np.imag(psi_approx_eigvals), edgecolors='tab:orange', facecolor='none', label=r'$1 - \exp(\tau \sigma)$')
     plt.xlabel('Real Part')
     plt.ylabel('Imaginary Part')

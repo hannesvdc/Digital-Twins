@@ -135,10 +135,22 @@ def patchTimestepper():
     dt = 1.e-4 # 1.e-5 for n_teeth=100
     T_patch = 10 * dt
     n_patch_steps = int(T / T_patch)
+    n_record_steps = n_patch_steps // 10
+    time_slice_u = [np.zeros((n_patch_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
+    time_slice_v = [np.zeros((n_patch_steps+1, n_points_per_tooth)) for _ in range(n_teeth)]
+    slice_index = 0
     for k in range(n_patch_steps):
+        if k % 10 == 0:
+            for l in range(n_teeth):
+                time_slice_u[l][slice_index,:] = u_sol[l]
+                time_slice_v[l][slice_index,:] = v_sol[l]
+            slice_index += 1
         if k % 1000 == 0:
             print('t =', round(k*T_patch, 4))
         u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
+    for l in range(n_teeth):
+        time_slice_u[l][n_record_steps,:] = u_sol[l]
+        time_slice_v[l][n_record_steps,:] = v_sol[l]
 
     # Store the steady - state
     np.save(directory + 'gaptooth_evolution_nteeth='+str(n_teeth) + '_T=' + str(T) + '.npy', np.vstack((np.concatenate(x_plot_array), np.concatenate(u_sol), np.concatenate(v_sol))))
@@ -169,6 +181,25 @@ def patchTimestepper():
     plt.plot(x_array_euler, u_euler, label=r'Reference $u(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='green')
     plt.plot(x_array_euler, v_euler, label=r'Reference $v(x, t=$' + str(T) + r'$)$', linestyle='dashed', color='red')
     plt.legend()
+
+    # Plot the complete time-slices
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    t_plot_array = np.linspace(0.0, T, n_record_steps+1)
+    u_max = max(np.max(time_slice_u[l] for l in range(n_teeth)))
+    u_min = min(np.max(time_slice_u[l] for l in range(n_teeth)))
+    v_max = max(np.max(time_slice_v[l] for l in range(n_teeth)))
+    v_min = min(np.max(time_slice_v[l] for l in range(n_teeth)))
+    for l in range(n_teeth):
+        X, Y = np.meshgrid(x_plot_array[l], t_plot_array)
+        ax1.pcolor(X, Y, time_slice_u[l], cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
+        ax2.pcolor(X, Y, time_slice_v, cmap='viridis', vmin=min(u_min, v_min), vmax=max(u_max, v_max))
+    ax1.set_xlabel(r'$x$')
+    ax1.set_ylabel(r'$t$')
+    ax1.set_title(r'$u(x, t)$')        
+    ax2.set_xlabel(r'$x$')
+    ax2.set_ylabel(r'$t$')
+    ax2.set_title(r'$u(x, t)$')
+    plt.title(r'Gap-Tooth Time-Evolution $\varepsilon=0.1$')
     plt.show()
 
 def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False, countEvalutions=False):
@@ -287,68 +318,6 @@ def findSteadyStateNewtonGMRES():
     plt.legend()
     plt.show()
 
-# Code for slides only!
-def showTimeEvolution():
-    BSpline.ClampedCubicSpline.lu_exists = False
-
-    # Domain parameters
-    L = 20.0
-    n_teeth = 30#100
-    n_gaps = n_teeth - 1
-    gap_over_tooth_size_ratio = 1
-    n_points_per_tooth = 11
-    n_points_per_gap = gap_over_tooth_size_ratio * (n_points_per_tooth - 1) - 1
-    N = n_teeth * n_points_per_tooth + n_gaps * n_points_per_gap
-    dx = L / (N - 1)
-
-    # Model parameters
-    a0 = -0.03
-    a1 = 2.0
-    delta = 4.0
-    eps = 0.1
-    params = {'delta': delta, 'eps': eps, 'a0': a0, 'a1': a1}
-
-    # Initial condition - divide over all teeth
-    x_array = np.linspace(0.0, L, N)
-    x_plot_array = []
-    u0 = sigmoid(x_array, 6.0, -1, 1.0, 2.0)
-    v0 = sigmoid(x_array, 10, 0.0, 2.0, 0.1)
-    u0, v0 = fixInitialBCs(u0, v0)
-    u_sol = []
-    v_sol = []
-    for i in range(n_teeth):
-        u_sol.append(u0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        v_sol.append(v0[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-        x_plot_array.append(x_array[i * (n_points_per_gap + n_points_per_tooth) : i * (n_points_per_gap + n_points_per_tooth) + n_points_per_tooth])
-    u0 = u_sol.copy()
-    v0 = v_sol.copy()
-
-    # Gap-Tooth Timestepping 
-    T = 3.0
-    dt = 1.e-4 # 1.e-5 for n_teeth=100
-    T_patch = 10 * dt
-    n_patch_steps = int(T / T_patch)
-    for k in range(n_patch_steps):
-        if k % 1000 == 0:
-            print('t =', round(k*T_patch, 4))
-        u_sol, v_sol = patchOneTimestep(u_sol, v_sol, x_plot_array, L, n_teeth, dx, dt, T_patch, params, solver='lu_direct')
-
-    # Plot
-    plt.plot(x_plot_array[0], u0[0], color='tab:blue', label=r'Time $t$')
-    plt.plot(x_plot_array[0], v0[0], color='tab:blue')
-    plt.plot(x_plot_array[0], u_sol[0], color='tab:orange', label=r'Time $t+\tau$')
-    plt.plot(x_plot_array[0], v_sol[0], color='tab:orange')
-    for i in range(1, n_teeth):
-        plt.plot(x_plot_array[i], u0[i], color='tab:blue')
-        plt.plot(x_plot_array[i], v0[i], color='tab:blue')
-        plt.plot(x_plot_array[i], u_sol[i], color='tab:orange')
-        plt.plot(x_plot_array[i], v_sol[i], color='tab:orange')
-    #plt.title('Steady-State Gap-Tooth')
-    plt.xlabel(r'$x$')
-    plt.ylabel(r'$u, v$', rotation=0)
-    plt.legend()
-    plt.show()
-
 def calculateEigenvalues():
     BSpline.ClampedCubicSpline.lu_exists = False
 
@@ -420,7 +389,6 @@ def parseArguments():
 
 if __name__ == '__main__':
     args = parseArguments()
-    showTimeEvolution()
     
     if args.experiment == 'ss':
         findSteadyStateNewtonGMRES()

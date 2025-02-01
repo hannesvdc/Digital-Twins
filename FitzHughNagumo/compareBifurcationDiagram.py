@@ -28,7 +28,7 @@ hopf_index = np.searchsorted(euuler_eps2_sorted, eps_hopf)
 u_hopf = euler_u_data_p2_sorted[hopf_index]
 
 plt.plot(euler_eps1, euler_u_data_p1, color='tab:blue', label='Euler Timestepper') # right-branch
-#plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
+plt.plot(euler_eps2, euler_u_data_p2, color='tab:blue')
 
 # Then plot the Tooth-Without-Gaps diagram (substitute for gap-tooth bf diagram for now)
 tng_data = np.load(directory + tooth_no_gap_bf_file)

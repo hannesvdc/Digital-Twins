@@ -200,7 +200,7 @@ def patchTimestepper():
     ax2.set_xlabel(r'$x$')
     ax2.set_ylabel(r'$t$')
     ax2.set_title(r'$u(x, t)$')
-    plt.title(r'Gap-Tooth Time-Evolution $\varepsilon=0.01$')
+    plt.suptitle(r'Gap-Tooth Time-Evolution $\varepsilon=0.01$')
     plt.show()
 
 def psiPatch(z0, x_array, L, n_teeth, dx, dt, T_patch, T, params, solver='lu_direct', verbose=False, countEvalutions=False):

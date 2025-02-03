@@ -2,6 +2,7 @@ import torch as pt
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as sch
+import json
 
 import matplotlib.pyplot as plt
 
@@ -11,18 +12,36 @@ from BlackBoxModel import FeedforwardNetwork
 
 # Just some sanity pytorch settings
 pt.set_grad_enabled(True)
-pt.set_default_dtype(pt.float64)
+if pt.backends.mps.is_available():
+    device = pt.device("mps")
+    dtype = pt.float32
+    canPlot = True
+elif pt.cuda.is_available():
+    print('CUDA Device Available:', pt.cuda.get_device_name(0))
+    device = pt.device("cuda:0")
+    dtype = pt.float32
+    canPlot = False
+else:
+    print('Using CPU because no GPU is available.')
+    device = pt.device("cpu")
+    dtype = pt.float64
+    canPlot = True
+
+# Load the Config file
+configFile = open('DataConfig.json')
+config = json.load(configFile)
+store_directory = config["Results Directory"]
 
 # Load the data in memory
 print('Generating Training Data.')
 batch_size = 300300
-dataset = NSDataSet()
+dataset = NSDataSet(device, dtype)
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Neural Network and the Optimizer (Adam)
 print('\nSetting Up the Feed-Forward Neural Network.')
 lr_step = 2500
-network = FeedforwardNetwork()
+network = FeedforwardNetwork().to(device)
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)
 scheduler = sch.StepLR(optimizer, step_size=lr_step, gamma=0.1)
@@ -32,7 +51,6 @@ print('Number of Data Points per Trainable Parameter:', len(dataset) / network.n
 train_losses = []
 train_grads = []
 train_counter = []
-store_directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/WaveData/'
 def computeGradNorm():
     grads = []
     for param in network.parameters():
@@ -76,8 +94,9 @@ except KeyboardInterrupt:
     print('Terminating Training. Plotting Training Error Convergence.')
 
 # Show the training results
-plt.semilogy(train_counter, train_grads, color='orange', label='Training Gradient')
-plt.semilogy(train_counter, train_losses, color='blue', label='Training Loss')
-plt.legend()
-plt.xlabel('Epoch')
-plt.show()
+if canPlot:
+    plt.semilogy(train_counter, train_grads, color='orange', label='Training Gradient')
+    plt.semilogy(train_counter, train_losses, color='blue', label='Training Loss')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.show()

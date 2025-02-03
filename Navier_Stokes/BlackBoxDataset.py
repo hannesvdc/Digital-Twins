@@ -1,18 +1,23 @@
 import torch as pt
 import numpy as np
 import numpy.fft as fft
-import scipy.stats as stats
+import json
 
 from torch.utils.data import Dataset
 
 class NSDataSet(Dataset):
-    def __init__(self):
+    def __init__(self, device, dtype):
         super(NSDataSet, self).__init__()
+    
+        # Load the Data Config file
+        dataConfigFile = open("DataConfig.json")
+        dataConfig = json.load(dataConfigFile)
+        self.storage_directory = dataConfig["Data Directory"]
+        print('Data directory', self.storage_directory)
 
         # Load the dataset for this specific Reynolds Number
         self.R_string = '1p75'
         self.R = 1.75
-        self.storage_directory = '/Users/hannesvdc/OneDrive - Johns Hopkins/Research_Data/Digital Twins/WaveData/'
         self.y_filename = 'newRe' + self.R_string + '_y.dat'
         self.dydt_filename = 'newRe' + self.R_string + '_dydt.dat'
         y_data = np.loadtxt(self.storage_directory + self.y_filename)
@@ -51,13 +56,19 @@ class NSDataSet(Dataset):
         self.y_xxxx_mean, self.y_xxxx_std = np.mean(dydxxxx_data), np.std(dydxxxx_data)
 
         # Convert spatial derivatives to pytorch without gradients
-        self.input_data = pt.zeros((y_data.size, 5)).requires_grad_(False)
-        self.input_data[:,0] = pt.from_numpy((y_data - self.y_mean) / self.y_std)
-        self.input_data[:,1] = pt.from_numpy((dydx_data - self.y_x_mean) / self.y_x_std)
-        self.input_data[:,2] = pt.from_numpy((dydxx_data - self.y_xx_mean) / self.y_xx_std)
-        self.input_data[:,3] = pt.from_numpy((dydxxx_data - self.y_xxx_mean) / self.y_xxx_std)
-        self.input_data[:,4] = pt.from_numpy((dydxxxx_data - self.y_xxxx_mean) / self.y_xxxx_std)
-        self.output_data = pt.unsqueeze(pt.from_numpy( (dydt_data - self.y_t_mean) / self.y_t_std), dim=1).requires_grad_(False)
+        print('y_data.size', y_data.size, device, dtype)
+        self.input_data = pt.zeros((y_data.size, 5), dtype=dtype, device=device)
+        self.input_data[:,0] = pt.tensor((y_data - self.y_mean) / self.y_std, device=device, dtype=dtype)
+        self.input_data[:,1] = pt.tensor((dydx_data - self.y_x_mean) / self.y_x_std,  device=device, dtype=dtype)
+        self.input_data[:,2] = pt.tensor((dydxx_data - self.y_xx_mean) / self.y_xx_std,  device=device, dtype=dtype)
+        self.input_data[:,3] = pt.tensor((dydxxx_data - self.y_xxx_mean) / self.y_xxx_std, device=device, dtype=dtype)
+        self.input_data[:,4] = pt.tensor((dydxxxx_data - self.y_xxxx_mean) / self.y_xxxx_std, device=device, dtype=dtype)
+        self.output_data = pt.unsqueeze(pt.tensor( (dydt_data - self.y_t_mean) / self.y_t_std, device=device, dtype=dtype), dim=1)
+
+        self.input_data.requires_grad = False
+        self.output_data.requires_grad = False
+        print("Device of input_data:", self.input_data.device)
+        print("Device of output_data:", self.output_data.device)
 
     def __len__(self):
         return self.input_data.shape[0]
@@ -66,4 +77,4 @@ class NSDataSet(Dataset):
         return (self.input_data[idx, :], self.output_data[idx, :])
 
 if __name__ == '__main__':
-    dataset = NSDataSet()
+    dataset = NSDataSet('cpu', pt.float64)

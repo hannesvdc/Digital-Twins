@@ -56,7 +56,6 @@ class NSDataSet(Dataset):
         self.y_xxxx_mean, self.y_xxxx_std = np.mean(dydxxxx_data), np.std(dydxxxx_data)
 
         # Convert spatial derivatives to pytorch without gradients
-        print('y_data.size', y_data.size, device, dtype)
         self.input_data = pt.zeros((y_data.size, 5), dtype=dtype, device=device)
         self.input_data[:,0] = pt.tensor((y_data - self.y_mean) / self.y_std, device=device, dtype=dtype)
         self.input_data[:,1] = pt.tensor((dydx_data - self.y_x_mean) / self.y_x_std,  device=device, dtype=dtype)
@@ -67,8 +66,6 @@ class NSDataSet(Dataset):
 
         self.input_data.requires_grad = False
         self.output_data.requires_grad = False
-        print("Device of input_data:", self.input_data.device)
-        print("Device of output_data:", self.output_data.device)
 
     def __len__(self):
         return self.input_data.shape[0]

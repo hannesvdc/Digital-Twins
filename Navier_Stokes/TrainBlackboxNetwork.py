@@ -24,7 +24,7 @@ elif pt.cuda.is_available():
 else:
     print('Using CPU because no GPU is available.')
     device = pt.device("cpu")
-    dtype = pt.float64
+    dtype = pt.float32
     canPlot = True
 
 # Load the Config file
@@ -40,7 +40,7 @@ train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 # Initialize the Neural Network and the Optimizer (Adam)
 print('\nSetting Up the Feed-Forward Neural Network.')
-lr_step = 2500
+lr_step = 1000
 network = FeedforwardNetwork().to(device)
 loss_fn = nn.functional.mse_loss
 optimizer = optim.Adam(network.parameters(), lr=0.001)
@@ -84,8 +84,8 @@ def train(epoch):
             print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6E} \tLoss Gradient: {:.6E} \tlr: {:.2E}'.format(
                         epoch, batch_idx * len(dataset), len(train_loader.dataset),
                         100. * batch_idx / len(train_loader), loss.item(), loss_grad, scheduler.get_last_lr()[0]))
-            pt.save(network.state_dict(), store_directory + 'model_Re_black_box.pth')
-            pt.save(optimizer.state_dict(), store_directory + 'optimizer_Re_black_box.pth')
+            pt.save(network.state_dict(), store_directory + 'model_black_box.pth')
+            pt.save(optimizer.state_dict(), store_directory + 'optimizer_black_box.pth')
 
 # Do the actual training
 print('\nStarting Adam Training Procedure...')

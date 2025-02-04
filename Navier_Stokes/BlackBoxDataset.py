@@ -8,6 +8,9 @@ from torch.utils.data import Dataset
 class NSDataSet(Dataset):
     def __init__(self, device, dtype):
         super(NSDataSet, self).__init__()
+
+        # Geometry Parameters
+        self.L = 95.0
     
         # Load the Data Config file
         dataConfigFile = open("DataConfig.json")
@@ -15,16 +18,11 @@ class NSDataSet(Dataset):
         self.storage_directory = dataConfig["Data Directory"]
         print('Data directory', self.storage_directory)
 
-        # Load the dataset for this specific Reynolds Number
-        self.L = 95.0
-        self.per_R_data_size = 300300
-        R_values = ['1p15', '1p35', '1p75', '1p85', '1p95', '2p05', '2p15', '2p25', '2p45', '2p60', '3p0', '3p2', '3p5', '3p7', '4p0', '4p2', '4p5', '4p7', '4p9', '5p2']
-
-        # First calculate the size of the complete data
+        # Load the dataset for this specific Reynolds Number. Calculate the data size first.
         self.data_size = 0
+        R_values = ['1p15', '1p35', '1p75', '1p85', '1p95', '2p05', '2p15', '2p25', '2p45', '2p60', '3p0', '3p2', '3p5', '3p7', '4p0', '4p2', '4p5', '4p7', '4p9', '5p2']
         for index in range(len(R_values)):
             R_string = R_values[index]
-            R = float(R_string.replace('p', '.'))
             y_filename = 'newRe' + R_string + '_y.dat'
             dydt_filename = 'newRe' + R_string + '_dydt.dat'
             y_data = np.loadtxt(self.storage_directory + y_filename).flatten('F')
@@ -37,7 +35,6 @@ class NSDataSet(Dataset):
         self.input_data = pt.zeros((self.data_size, 6), dtype=dtype, device=device, requires_grad=False)
         self.output_data = pt.zeros((self.data_size, 1), dtype=dtype, device=device, requires_grad=False)
         for index in range(len(R_values)):
-            print('R =', R_values[index])
             R_string = R_values[index]
             R = float(R_string.replace('p', '.'))
             y_filename = 'newRe' + R_string + '_y.dat'
@@ -46,8 +43,8 @@ class NSDataSet(Dataset):
             dydt_data = np.loadtxt(self.storage_directory + dydt_filename)
 
             # Compute the spatial Derivatives
-            self.M = y_data.shape[0]
-            k = np.concatenate((np.arange(self.M // 2 + 1), np.arange(-self.M // 2 + 1, 0))) * 2.0 * np.pi / self.L
+            M = y_data.shape[0]
+            k = np.concatenate((np.arange(M // 2 + 1), np.arange(-M // 2 + 1, 0))) * 2.0 * np.pi / self.L
             dydx_data = np.zeros_like(y_data)
             dydxx_data = np.zeros_like(y_data)
             dydxxx_data = np.zeros_like(y_data)
@@ -92,11 +89,11 @@ class NSDataSet(Dataset):
             self.output_data[data_index:data_index+block_data_size,:] = output_block_data
             data_index += block_data_size
 
+        # Some bookkeeping statistics
         print('Total Storage Size:', (self.input_data.nelement() * self.input_data.element_size() + self.output_data.nelement() * self.output_data.element_size()) / 1024.0**2, 'MB')
-        print(data_index, self.data_size, self.input_data.shape)
 
     def __len__(self):
-        return self.input_data.shape[0]
+        return self.data_size
     
     def __getitem__(self, idx):
         return (self.input_data[idx, :], self.output_data[idx, :])

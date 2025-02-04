@@ -8,7 +8,7 @@ class FeedforwardNetwork(nn.Module):
         super(FeedforwardNetwork, self).__init__()
         
         # Create all feed-forward layers
-        layers = [5, 100, 100, 100, 100, 1]
+        layers = [6, 100, 100, 100, 100, 1]
         self.depth = len(layers) - 1
         self.activation = nn.Tanh
 

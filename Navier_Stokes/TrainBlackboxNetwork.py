@@ -19,7 +19,7 @@ if pt.backends.mps.is_available():
 elif pt.cuda.is_available():
     print('CUDA Device Available:', pt.cuda.get_device_name(0))
     device = pt.device("cuda:0")
-    dtype = pt.float32
+    dtype = pt.float64
     canPlot = False
 else:
     print('Using CPU because no GPU is available.')
@@ -34,7 +34,7 @@ store_directory = config["Results Directory"]
 
 # Load the data in memory
 print('Generating Training Data.')
-batch_size = 300300
+batch_size = 128
 dataset = NSDataSet(device, dtype)
 train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -48,6 +48,7 @@ scheduler = sch.StepLR(optimizer, step_size=lr_step, gamma=0.1)
 print('Number of Data Points per Trainable Parameter:', len(dataset) / network.n_trainable_parameters)
 
 # Training Routine
+log_rate = 100
 train_losses = []
 train_grads = []
 train_counter = []
@@ -59,7 +60,7 @@ def computeGradNorm():
     return pt.norm(grads)
 def train(epoch):
     network.train()
-    for _, (input_data, output_data) in enumerate(train_loader):
+    for batch_idx, (input_data, output_data) in enumerate(train_loader):
         optimizer.zero_grad()
 
         # Foward-propagate the input data
@@ -75,13 +76,16 @@ def train(epoch):
         # Do one Adam optimization step
         optimizer.step()
 
-    # Some housekeeping
-    print('Train Epoch: {} \tLoss: {:.16f} \tLoss Gradient {:.16f}'.format(epoch, loss.item(), loss_grad.item()))
-    train_losses.append(loss.item())
-    train_grads.append(loss_grad.item())
-    train_counter.append(epoch)
-    pt.save(network.state_dict(), store_directory + 'model_black_box.pth')
-    pt.save(optimizer.state_dict(), store_directory + 'optimizer_black_box.pth')
+        # Some housekeeping
+        train_losses.append(loss.item())
+        train_grads.append(loss_grad.item())
+        train_counter.append(epoch)
+        if batch_idx % log_rate == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6E} \tLoss Gradient: {:.6E} \tlr: {:.2E}'.format(
+                        epoch, batch_idx * len(dataset), len(train_loader.dataset),
+                        100. * batch_idx / len(train_loader), loss.item(), loss_grad, scheduler.get_last_lr()[0]))
+            pt.save(network.state_dict(), store_directory + 'model_Re_black_box.pth')
+            pt.save(optimizer.state_dict(), store_directory + 'optimizer_Re_black_box.pth')
 
 # Do the actual training
 print('\nStarting Adam Training Procedure...')
@@ -95,8 +99,9 @@ except KeyboardInterrupt:
 
 # Show the training results
 if canPlot:
-    plt.semilogy(train_counter, train_grads, color='orange', label='Training Gradient')
-    plt.semilogy(train_counter, train_losses, color='blue', label='Training Loss')
+    plt.semilogy(train_counter, train_losses, color='tab:blue', label='Training Loss', alpha=0.5)
+    plt.semilogy(train_counter, train_grads, color='tab:orange', label='Loss Gradient', alpha=0.5)
     plt.legend()
     plt.xlabel('Epoch')
+    plt.ylabel('Loss')
     plt.show()

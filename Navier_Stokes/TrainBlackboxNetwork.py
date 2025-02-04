@@ -19,7 +19,7 @@ if pt.backends.mps.is_available():
 elif pt.cuda.is_available():
     print('CUDA Device Available:', pt.cuda.get_device_name(0))
     device = pt.device("cuda:0")
-    dtype = pt.float64
+    dtype = pt.float32
     canPlot = False
 else:
     print('Using CPU because no GPU is available.')

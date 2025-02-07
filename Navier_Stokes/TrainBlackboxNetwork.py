@@ -12,19 +12,17 @@ from BlackBoxModel import FeedforwardNetwork
 
 # Just some sanity pytorch settings
 pt.set_grad_enabled(True)
+dtype = pt.float32
 if pt.backends.mps.is_available():
     device = pt.device("mps")
-    dtype = pt.float32
     canPlot = True
 elif pt.cuda.is_available():
     print('CUDA Device Available:', pt.cuda.get_device_name(0))
     device = pt.device("cuda:0")
-    dtype = pt.float32
     canPlot = False
 else:
     print('Using CPU because no GPU is available.')
     device = pt.device("cpu")
-    dtype = pt.float32
     canPlot = True
 
 # Load the Config file

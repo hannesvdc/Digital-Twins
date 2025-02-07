@@ -66,28 +66,29 @@ class NSDataSet(Dataset):
             dydxxx_data = dydxxx_data.flatten('F')
             dydxxxx_data = dydxxxx_data.flatten('F')
 
-            y_mean, y_std = np.mean(y_data), np.std(y_data)
-            y_t_mean, y_t_std = np.mean(dydt_data), np.std(dydt_data)
-            y_x_mean, y_x_std = np.mean(dydx_data), np.std(dydx_data)
-            y_xx_mean, y_xx_std = np.mean(dydxx_data), np.std(dydxx_data)
-            y_xxx_mean, y_xxx_std = np.mean(dydxxx_data), np.std(dydxxx_data)
-            y_xxxx_mean, y_xxxx_std = np.mean(dydxxxx_data), np.std(dydxxxx_data)
-
             # Convert spatial derivatives to pytorch without gradients
             block_data_size = y_data.size
             input_block_data = pt.zeros((block_data_size, 6), dtype=dtype, device=device)
-            input_block_data[:,0] = pt.tensor((y_data - y_mean) / y_std, device=device, dtype=dtype)
-            input_block_data[:,1] = pt.tensor((dydx_data - y_x_mean) / y_x_std,  device=device, dtype=dtype)
-            input_block_data[:,2] = pt.tensor((dydxx_data - y_xx_mean) / y_xx_std,  device=device, dtype=dtype)
-            input_block_data[:,3] = pt.tensor((dydxxx_data - y_xxx_mean) / y_xxx_std, device=device, dtype=dtype)
-            input_block_data[:,4] = pt.tensor((dydxxxx_data - y_xxxx_mean) / y_xxxx_std, device=device, dtype=dtype)
+            input_block_data[:,0] = pt.tensor(y_data, device=device, dtype=dtype)
+            input_block_data[:,1] = pt.tensor(dydx_data, device=device, dtype=dtype)
+            input_block_data[:,2] = pt.tensor(dydxx_data, device=device, dtype=dtype)
+            input_block_data[:,3] = pt.tensor(dydxxx_data, device=device, dtype=dtype)
+            input_block_data[:,4] = pt.tensor(dydxxxx_data, device=device, dtype=dtype)
             input_block_data[:,5] = R * pt.ones(block_data_size, device=device, dtype=dtype)
-            output_block_data = pt.unsqueeze(pt.tensor( (dydt_data - y_t_mean) / y_t_std, device=device, dtype=dtype), dim=1)
+            output_block_data = pt.unsqueeze(pt.tensor(dydt_data, device=device, dtype=dtype), dim=1)
 
             # Store in the big data tensor
             self.input_data[data_index:data_index+block_data_size,:] = input_block_data
             self.output_data[data_index:data_index+block_data_size,:] = output_block_data
             data_index += block_data_size
+
+        # Normalize the data for better training
+        self.input_mean = pt.mean(self.input_data, dim=0, keepdim=True)
+        self.input_std = pt.std(self.input_data, dim=0, keepdim=True)
+        self.output_mean = pt.mean(self.output_data, dim=0, keepdim=True)
+        self.output_std = pt.std(self.output_data, dim=0, keepdim=True)
+        self.input_data = (self.input_data - self.input_mean) / self.input_std
+        self.output_data = (self.output_data - self.output_mean) / self.output_std
 
         # Some bookkeeping statistics
         print('Total Storage Size:', (self.input_data.nelement() * self.input_data.element_size() + self.output_data.nelement() * self.output_data.element_size()) / 1024.0**2, 'MB')

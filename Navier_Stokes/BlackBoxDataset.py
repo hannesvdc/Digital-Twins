@@ -10,13 +10,13 @@ class NSDataSet(Dataset):
         super(NSDataSet, self).__init__()
 
         # Geometry Parameters
-        self.L = 95.0
+        L = 95.0
     
         # Load the Data Config file
         dataConfigFile = open("DataConfig.json")
         dataConfig = json.load(dataConfigFile)
-        self.storage_directory = dataConfig["Data Directory"]
-        print('Data directory', self.storage_directory)
+        storage_directory = dataConfig["Data Directory"]
+        print('Data directory', storage_directory)
 
         # Load the dataset for this specific Reynolds Number. Calculate the data size first.
         self.data_size = 0
@@ -25,8 +25,8 @@ class NSDataSet(Dataset):
             R_string = R_values[index]
             y_filename = 'newRe' + R_string + '_y.dat'
             dydt_filename = 'newRe' + R_string + '_dydt.dat'
-            y_data = np.loadtxt(self.storage_directory + y_filename).flatten('F')
-            dydt_data = np.loadtxt(self.storage_directory + dydt_filename).flatten('F')
+            y_data = np.loadtxt(storage_directory + y_filename).flatten('F')
+            dydt_data = np.loadtxt(storage_directory + dydt_filename).flatten('F')
             self.data_size += y_data.size
         print('Total Data Size:', self.data_size)
 
@@ -39,12 +39,12 @@ class NSDataSet(Dataset):
             R = float(R_string.replace('p', '.'))
             y_filename = 'newRe' + R_string + '_y.dat'
             dydt_filename = 'newRe' + R_string + '_dydt.dat'
-            y_data = np.loadtxt(self.storage_directory + y_filename)
-            dydt_data = np.loadtxt(self.storage_directory + dydt_filename)
+            y_data = np.loadtxt(storage_directory + y_filename)
+            dydt_data = np.loadtxt(storage_directory + dydt_filename)
 
             # Compute the spatial Derivatives
             M = y_data.shape[0]
-            k = np.concatenate((np.arange(M // 2 + 1), np.arange(-M // 2 + 1, 0))) * 2.0 * np.pi / self.L
+            k = np.concatenate((np.arange(M // 2 + 1), np.arange(-M // 2 + 1, 0))) * 2.0 * np.pi / L
             dydx_data = np.zeros_like(y_data)
             dydxx_data = np.zeros_like(y_data)
             dydxxx_data = np.zeros_like(y_data)

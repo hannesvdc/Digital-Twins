@@ -13,7 +13,6 @@ Navier_Stokes/DataConfig.json
 **/*.job
 **/*.err
 **/*.out
-**/*.pth
 
 # Distribution / packaging
 .Python
